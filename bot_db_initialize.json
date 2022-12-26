@@ -10,7 +10,7 @@
         "csp": {
           "strat_type": "mean_reversion",
           "trading_pairs": ["BTCUSD, ETHUSD"],
-          "timeframes": ["1h", "2h", "4h"]
+          "timeframes": ["5m", "30m", "1h"]
         }
       },
       "about": {
@@ -37,5 +37,29 @@
       }
     }
   },
-  "active_tfs": ["5m", "30m", "1h", "2h", "4h"]
+  "active_tfs": {
+    "5m": ["csp"],
+    "30m": ["csp"],
+    "1h": ["csp", "krowncross"],
+    "2h": ["krowncross"],
+    "4h": ["krowncross"]
+  },
+  "active_bots" : {
+    "5m": {
+      "csp": ["BTCUSD"]
+    },
+    "30m": {
+      "csp": ["BTCUSD","LTCUSD"]
+    },
+    "1h": {
+      "krowncross": ["BTCUSD", "ETHUSD","LTCUSD"],
+      "csp": ["LTCUSD"]
+    },
+    "2h": {
+      "krowncross": ["BTCUSD", "ETHUSD","LTCUSD"]
+    },
+    "4h": {
+      "krowncross": ["BTCUSD", "ETHUSD","LTCUSD"]
+    }
+  }
 }
