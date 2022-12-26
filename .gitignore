@@ -1,0 +1,5 @@
+#Ignore play file
+MessAround.py
+
+#Ignore firebase credentials
+firebase_credentials.json
