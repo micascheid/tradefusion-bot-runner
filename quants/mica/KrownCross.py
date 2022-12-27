@@ -3,6 +3,7 @@ from BotInterface import BotInterface
 
 class KrownCross(BotInterface):
     krowncross_dict = {}
+
     def __init__(self, tf, pair):
         super().__init__(tf, pair)
         BotInterface.bots_created[tf+pair] = self
@@ -14,5 +15,5 @@ class KrownCross(BotInterface):
     def exit(self):
         print("Krown Cross is looking for exit on {}".format(self.tf))
 
-    def update(self):
-        pass
+    def update(self, subscribee):
+        print(f"updating on the {subscribee.name} timeframe")

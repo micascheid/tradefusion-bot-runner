@@ -3,3 +3,6 @@ MessAround.py
 
 #Ignore firebase credentials
 firebase_credentials.json
+
+#pycache
+__pycache__

@@ -17,5 +17,5 @@ class BotInterface(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def update(self):
+    def update(self, subscribee):
         pass
