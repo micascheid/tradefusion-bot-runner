@@ -11,6 +11,7 @@ from BotFactory import BotFactory
 from BotInterface import BotInterface
 import requests
 import time
+from KlineDataMonitor import KlineDataMonitor
 
 db_url = 'https://crudlearning-791df-default-rtdb.firebaseio.com/'
 
@@ -41,6 +42,7 @@ def create_bot_list(live_bots) -> list:
     return bot_obj_list
 
 
+
 if __name__ == '__main__':
 
     db_ref = db_initializer()
@@ -51,7 +53,6 @@ if __name__ == '__main__':
     start_bot_runner = input("Would you like to start bot_runner?[y/n]")
 
     if start_bot_runner == "y":
-
         while start_bot_runner == "y":
             list_bots = create_bot_list(db_get_active_bots(db_ref))
             bot_factory = BotFactory(list_bots)
