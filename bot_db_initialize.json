@@ -4,12 +4,12 @@
       "bots": {
         "krowncross": {
           "strat_type": "trend",
-          "trading_pairs": ["BTCUSD, ETHUSD, LTCUSD"],
+          "trading_pairs": ["BTCUSDT, ETHUSD, LTCUSD"],
           "timeframes": ["1h", "2h", "4h"]
         },
         "csp": {
           "strat_type": "mean_reversion",
-          "trading_pairs": ["BTCUSD, ETHUSD"],
+          "trading_pairs": ["BTCUSDT, ETHUSD"],
           "timeframes": ["5m", "30m", "1h"]
         }
       },
@@ -22,12 +22,12 @@
       "bots": {
         "krowncross_v2": {
           "strat_type": "trend",
-          "trading_pairs": ["BTCUSD, ETHUSD, LTCUSD"],
+          "trading_pairs": ["BTCUSDT, ETHUSD, LTCUSD"],
           "timeframes": ["1h", "2h", "4h"]
         },
         "csp_v2": {
           "strat_type": "mean_reversion",
-          "trading_pairs": ["BTCUSD, ETHUSD"],
+          "trading_pairs": ["BTCUSDT, ETHUSD"],
           "timeframes": ["5m", "30m", "1h"]
         }
       },
@@ -46,20 +46,27 @@
   },
   "active_bots" : {
     "5m": {
-      "csp": ["BTCUSD"]
+      "csp": ["BTCUSDT"]
     },
     "30m": {
-      "csp": ["BTCUSD","LTCUSD"]
+      "csp": ["BTCUSDT","LTCUSD"]
     },
     "1h": {
-      "krowncross": ["BTCUSD", "ETHUSD","LTCUSD"],
-      "csp": ["LTCUSD"]
+      "krowncross": ["BTCUSDT", "ETHUSD","LTCUSD"],
+      "csp": ["LTCUSD", "ADAUSD"]
     },
     "2h": {
-      "krowncross": ["BTCUSD", "ETHUSD","LTCUSD"]
+      "krowncross": ["BTCUSDT", "ETHUSD","LTCUSD"]
     },
     "4h": {
-      "krowncross": ["BTCUSD", "ETHUSD","LTCUSD"]
+      "krowncross": ["BTCUSDT", "ETHUSD","LTCUSD"]
     }
+  },
+  "timeframe_pairs": {
+    "5m": ["BTCUSDT"],
+    "30m": ["BTCUSDT", "LTCUSD"],
+    "1h": ["ADAUSD","BTCUSDT", "ETHUSD", "LTCUSD"],
+    "2h": ["BTCUSDT", "ETHUSD","LTCUSD"],
+    "4h": ["BTCUSDT", "ETHUSD","LTCUSD"]
   }
 }
