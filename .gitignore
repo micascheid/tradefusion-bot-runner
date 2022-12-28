@@ -6,3 +6,4 @@ firebase_credentials.json
 
 #pycache
 __pycache__/
+quants/mica/__pycache__/
