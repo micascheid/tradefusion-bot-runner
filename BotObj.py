@@ -13,7 +13,7 @@ class BotObj:
     #     cls.instances[val] = obj
     #
     #     return obj
-    def __init__(self, name, tf, pair):
+    def __init__(self, name=True, tf=True, pair=True):
         self.name = name
         self.tf = tf
         self.pair = pair
