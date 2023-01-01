@@ -1,4 +1,4 @@
-from BotsEnum import BotsEnum, bots_enum_dict
+from BotsEnum import bots_enum_dict
 import BotInterface
 
 

@@ -1,19 +1,19 @@
 from datetime import datetime
-import json
-
+import numpy
+import numpy as np
 import pytz
 import requests
+from pandas import DataFrame
 
 from KlineDataMonitor import KlineDataMonitor
 import time
 from DBPaths import DBPaths
 import firebase_admin
-from firebase_admin import credentials, db, app_check
+from firebase_admin import credentials, db
 from apscheduler.schedulers.background import BackgroundScheduler
 from BotFactory import BotFactory
 from BotObj import BotObj
-
-db_url = 'https://crudlearning-791df-default-rtdb.firebaseio.com/'
+import DBStuffForNow
 
 TIME_FRAME_TO_SEC = {
     "5m": 300,
@@ -30,23 +30,8 @@ INTERVAL_UNITS = {
     "w": "weeks"
 }
 
-def db_initializer():
-    file = open('bot_db_initialize.json', 'r')
-    db_init_obj = json.load(file)
-    cred = credentials.Certificate('firebase_credentials.json')
 
-    try:
-        firebase_admin.get_app()
-    except ValueError as e:
-        firebase_admin.initialize_app(cred, options={'databaseURL': db_url})
-
-
-    ref = db.reference('/')
-    if ref.get() is None:
-        ref.set(db_init_obj)
-    return ref
-
-REF = db_initializer()
+REF = DBStuffForNow.db_initializer()
 
 def db_get_active_bots() -> dict:
     return REF.child(DBPaths.ACTIVEBOTS.value).get()
@@ -135,9 +120,18 @@ def kline_url_builder(tf, pair):
 def data_pull(tf, pair, data_monitor):
     print("being called to print data")
     url = kline_url_builder(tf, pair)
-    res = requests.get(url)
-    data_monitor.data = res
-    # print(res)
+    resp = requests.get(url).json()
+    data = binance_to_dataframe(resp)
+    data_monitor.data = data
+
+def binance_to_dataframe(dub_arr) -> DataFrame:
+    np_arr = np.array(dub_arr)
+    np_arr = numpy.delete(np_arr, range(5, 12), axis=1)
+    columns = ['timestamp', 'Open', 'High', 'Low', 'Close']
+    df = DataFrame(data=np_arr, columns=columns)
+    df['timestamp'] = df['timestamp'].apply(lambda epoch: datetime.fromtimestamp(int(epoch)/1000))
+    df = df.set_index('timestamp')
+    return df
 
 
 if __name__ == '__main__':
