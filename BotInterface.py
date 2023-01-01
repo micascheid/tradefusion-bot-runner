@@ -35,7 +35,7 @@ class BotInterface(metaclass=ABCMeta):
     @abstractmethod
     def exit(self, exit_info):
         """
-        :description:
+        :description: handles db management for the exit of a trade
         :param exit_info: The exit_info json object contains the entirety of a trade for a given bot which contains
             all entry and exit info of the indicators for the strategy along with the candle metrics. TODO: add in
             trade metrics
@@ -47,7 +47,7 @@ class BotInterface(metaclass=ABCMeta):
     def entry_exit(self):
         """
         :description: decides when to enter/exit a trade based on the latest candle data and delegates db management
-        for live trading info to self.entry() and self.exit()
+            for live trading info to self.entry() and self.exit()
         :return: Nothing
         """
         pass
@@ -55,7 +55,7 @@ class BotInterface(metaclass=ABCMeta):
     def update(self, subscribee):
         """
         :description: what allows for a bot to get the latest info on the tf and pair for a data monitor in which it
-        is subscribed to. Once new data is recieved the bot heads off to make entry/exit decisions
+            is subscribed to. Once new data is recieved the bot heads off to make entry/exit decisions
         :param subscribee: KlineDataMonitor
         :return: nothing
         """
