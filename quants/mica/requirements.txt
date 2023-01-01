@@ -1,0 +1,10 @@
+APScheduler
+firebase
+firebase-admin
+numpy
+pandas
+pandas-ta
+python-binance
+pytz
+requests
+TA-Lib

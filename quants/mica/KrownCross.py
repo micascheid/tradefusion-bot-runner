@@ -1,4 +1,26 @@
 from BotInterface import BotInterface
+import pandas_ta as ta
+import numpy as np
+import pandas as pd
+from firebase_admin import db
+
+EMA_F = 9 #f = fast
+EMA_M = 21 #m = medium
+EMA_S = 55 # s = slow
+separation = 2
+bbwp_entry_signal = 60
+bbwp_exit_signal = 70
+bbwp_hit_counter = 0
+
+TIME_IN = "time_in"
+TIME_OUT = "time_out"
+LONG = "long"
+PRICE_ENTRY = "price_entry"
+PRICE_EXIT = "price_exit"
+BBWP_ENTRY = "bbwp_entry"
+BBWP_EXIT = "bbwp_exit"
+CLOSE = "Close"
+BBWP = "BBWP"
 
 
 class KrownCross(BotInterface):
@@ -7,13 +29,186 @@ class KrownCross(BotInterface):
     def __init__(self, name, tf, pair):
         super().__init__(name, tf, pair)
         print("Being Created")
-        # BotInterface.bots_created[tf+pair] = self
+        self.bbwp_hit_counter = 0
+        self.ref_entry = db.reference(f'entry/krowncross/{self.tf+self.pair}')
+        self.ref_trade_history = db.reference(f'trade_history/{self.name}/{self.tf+self.pair}/')
+        self.trade_force_count = 0
 
-    def entry(self):
+    def entry_exit(self):
+        # candle is a data frame of a single row containing the most recent candle to which to apply trade logic on
+        candle = self.strategy_indicators()
+        timestamp = str(candle.index[0])
+        ema_f = candle['EMA_9'][0]
+        ema_m = candle['EMA_21'][0]
+        ema_s = candle['EMA_55'][0]
+        price = candle['Close'][0]
+        bbwp = candle['BBWP'][0]
+        bbwp_hit_exit = 3
+
+        long_entry_signals = 0
+        short_entry_signals = 0
+
+        #for testing purposes
+        trade_force = True
+        if trade_force:
+            if self.trade_force_count == 1:
+                exit_info = {
+                    "time_out": timestamp,
+                    "long": True,
+                    "price_exit": price,
+                    "bbwp_exit": bbwp
+                }
+                self.exit(exit_info)
+                self.trade_force_count = 0
+                return
+            entry_info = {
+                "time_in": timestamp,
+                "long": True,
+                "price_entry": price,
+                "bbwp_entry": bbwp
+            }
+            self.entry(entry_info)
+            self.trade_force_count += 1
+            return
+
+        seperation_calc = abs((price - ema_m) / ema_m) * 100
+
+        # Check 1: EMA Checks of 9>21>55
+        if ema_f > ema_m > ema_s:
+            long_entry_signals += 1
+
+        if ema_f < ema_m < ema_s:
+            short_entry_signals += 1
+
+        # Check 2: Degree of separation check
+        if seperation_calc <= separation:
+            long_entry_signals += 1
+            short_entry_signals += 1
+
+        # Check 3: bbwp checks
+        if bbwp < bbwp_entry_signal:
+            long_entry_signals += 1
+            short_entry_signals += 1
+
+        # Take profit
+        if bbwp >= bbwp_exit_signal:
+            self.bbwp_hit_counter += 1
+        price = self.data.df.Close[-1]
+        is_take_profit = (self.long_hold == 1 and self.bbwp_hit_counter == bbwp_hit_exit) or (
+                    self.short_hold == 1 and
+                    self.bbwp_hit_counter == bbwp_hit_exit)
+
+        # Stop loss
+        is_stop_loss = False
+        if self.long_hold == 1:
+            is_stop_loss = self.long_hold == 1 and ema_f < ema_m or price <= ema_s
+        if self.short_hold == 1:
+            is_stop_loss = self.short_hold == 1 and ema_f > ema_m or price >= ema_s
+
+        entry_info = {
+            "time_in": timestamp,
+            "long": True,
+            "price_entry": price,
+            "bbwp_entry": bbwp
+        }
+
+        exit_info = {
+            "time_out": timestamp,
+            "price_exit": price,
+            "bbwp_exit": bbwp
+        }
+
+        # Long entry
+        if self.long_hold == 0 and long_entry_signals == 3:
+            if self.short_hold == 1:
+                self.exit(exit_info)
+                self.short_hold = 0
+            self.entry(entry_info)
+            self.last_purchase_price = price
+            self.long_hold = 1
+
+        # Long exit
+        elif self.long_hold == 1 and (is_take_profit or is_stop_loss):
+            self.exit(exit_info)
+            self.long_hold = 0
+            self.last_purchase_price = 0
+            self.bbwp_hit_counter = 0
+
+        if self.short_hold == 0 and short_entry_signals == 3:
+            if self.long_hold == 1:
+                self.exit(exit_info)
+                self.long_hold = 0
+            self.entry(entry_info)
+            self.last_purchase_price = price
+            self.short_hold = 1
+        # Short exit
+        elif self.short_hold == 1 and (is_take_profit or is_stop_loss):
+            self.exit(exit_info)
+            self.short_hold = 0
+            self.last_purchase_price = 0
+            self.bbwp_hit_counter = 0
+
         print("Krown Cross is looking for entry on {},  on the {} timeframe".format(self.pair, self.tf))
 
-    def exit(self):
+    def exit(self, exit):
         print("Krown Cross is looking for exit on {}".format(self.tf))
+        '''handles the mock exit for a trade and stores the trade values to db in the trade history node'''
+        # push trade to db
+        final_trade = self.trade_history_build(exit)
+        self.ref_trade_history.push(final_trade)
+        # Remove entry from db
+        self.ref_entry.set("null")
 
-    def update(self, subscribee):
-        print(f"{self.name} Looking for entry on {self.tf} for the {self.pair} trading pair: \n      {subscribee.data}")
+    def entry(self, entry_info):
+        '''Sends trade entry information to the entry nodes table'''
+        self.ref_entry.set(entry_info)
+
+    def trade_history_build(self, exit_info):
+        #First get entry info
+        entry_info = self.ref_entry.get()
+
+        # Merge the entry and exit info into one dict for the trade_history node in the db
+        finished_trade = {
+            "time_in": entry_info[TIME_IN],
+            "time_out": exit_info[TIME_OUT],
+            "long": entry_info[LONG],
+            "price_entry": entry_info[PRICE_ENTRY],
+            "price_exit": exit_info[PRICE_EXIT],
+            "bbwp_entry": entry_info[BBWP_ENTRY],
+            "bbwp_exit": exit_info[BBWP_EXIT]
+        }
+
+        return finished_trade
+
+    def strategy_indicators(self):
+        df = self.data
+
+        # Columns names for ema will be as such: "EMA_{period}, ex: "EMA_9"
+        df.ta.ema(length=9, append=True)
+        df.ta.ema(length=21, append=True)
+        df.ta.ema(length=55, append=True)
+        df["BBWP"] = self.BBWP()
+
+        return df[-2:-1]
+
+    def BBWP(self):
+        df = self.data
+        STD = 2.0
+        LOOKBACK = 252
+        bbands_series = ta.bbands(df['Close'].astype(float), std=STD, mamode='sma', length=13)
+        BBW = bbands_series['BBB_13_2.0']
+        bbwp_series = np.array([])
+        bbwp = [0.0] * LOOKBACK
+
+        # make sure the series is at least as long as 252
+        if len(BBW) > LOOKBACK:
+            for current_bbw in range(LOOKBACK, len(BBW)):
+                count = 0
+                for bbw in range(current_bbw - LOOKBACK, current_bbw):
+                    if BBW[bbw] < BBW[current_bbw]:
+                        count += 1
+                bbwp.append((count / LOOKBACK) * 100)
+            bbwp_series = np.array(bbwp)
+        bbwp_series = pd.DataFrame(index=bbands_series.index, data=bbwp_series, columns=['BBWP'])
+
+        return bbwp_series
