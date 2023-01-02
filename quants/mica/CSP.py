@@ -1,25 +1,156 @@
 from BotInterface import BotInterface
+import pandas as pd
+from firebase_admin import db
+import pandas_ta as ta
+
+TIME_IN = "time_in"
+TIME_OUT = "time_out"
+POSITION = "position"
+PRICE_ENTRY = "price_entry"
+PRICE_EXIT = "price_exit"
+PPVI_HIGH = "ppvi_high"
+PPVI_LOW = "ppvi_low"
+CLOSE = "Close"
 
 
 class CSP(BotInterface):
     def __init__(self, name, tf, pair):
         super().__init__(name, tf, pair)
-
+        self.ref_entry = db.reference(f'entry/krowncross/{self.tf + self.pair}')
+        self.ref_trade_history = db.reference(f'trade_history/{self.name}/{self.tf + self.pair}/')
+        self.last_purchase_price = 0
+        self.PPVI_PERIOD = 3
 
     def entry_exit(self):
-        pass
+        stop_loss_percent = 1
+        take_profit_percent = 4
+
+        candle = self.strategy_indicators()
+        timestamp = str(candle.index[0])
+        price = float(candle['Close'][0])
+        ppvi_high_band = float(candle['PPVI_HIGH'][0])
+        ppvi_low_band = float(candle['PPVI_LOW'][0])
+
+        long_entry_signals = 0
+        short_entry_signals = 0
+        # Long Checks
+        if price < ppvi_low_band:
+            long_entry_signals += 1
+
+        # Short Checks
+        if price > ppvi_high_band:
+            short_entry_signals += 1
+
+        # Take Profit
+        is_take_profit = False
+        if self.long_hold == 1:
+            is_take_profit = price > ppvi_high_band or price > self.last_purchase_price * (
+                    1 + (take_profit_percent / 100))
+        if self.short_hold == 1:
+            is_take_profit = price < ppvi_low_band or price < self.last_purchase_price * (1 - (
+                    take_profit_percent / 100))
+
+        # Stop Loss
+        is_stop_loss = False
+        if self.long_hold == 1:
+            is_stop_loss = price < self.last_purchase_price * (1 - (stop_loss_percent / 100))
+
+        if self.short_hold == 1:
+            is_stop_loss = price > self.last_purchase_price * (1 + (stop_loss_percent / 100))
+
+        entry_info = {
+            "time_in": timestamp,
+            "position": "",
+            "price_entry": price,
+            "ppvi_high": ppvi_high_band,
+            "ppvi_low": ppvi_low_band
+        }
+
+        exit_info = {
+            "time_out": timestamp,
+            "price_exit": price,
+            "ppvi_high": ppvi_high_band,
+            "ppvi_low": ppvi_low_band
+        }
+
+        # Long Entry and Short Check Exit
+        if self.long_hold == 0 and long_entry_signals >= 1:
+            entry_info[POSITION] = "long"
+            if self.short_hold == 1:
+                self.exit(exit_info)
+                self.short_hold = 0
+            self.entry(entry_info)
+            self.last_purchase_price = price
+            self.long_hold = 1
+        # Long Exit as stop loss or take profit
+        elif self.long_hold == 1 and (is_take_profit or is_stop_loss):
+            self.exit(exit_info)
+            self.long_hold = 0
+            self.last_purchase_price = 0
+
+        # Short Entry and Long Exit Check
+        if self.short_hold == 0 and short_entry_signals >= 1:
+            entry_info[POSITION] = "short"
+            if self.long_hold == 1:
+                self.exit(exit_info)
+                self.long_hold = 0
+            self.entry(entry_info)
+            self.last_purchase_price = price
+            self.short_hold = 1
+        # Short Exit as stop loss or take profit
+        elif self.short_hold == 1 and (is_take_profit or is_stop_loss):
+            self.exit(exit_info)
+            self.short_hold = 0
+            self.last_purchase_price = 0
 
     def trade_history_build(self, exit_info):
-        pass
+        #First get entry info
+        entry_info = self.ref_entry
+
+        # Merge the entry and exit info into one dict for the trade_history node in the db
+        finished_trade = {
+            TIME_IN: entry_info[TIME_IN],
+            TIME_OUT: exit_info[TIME_OUT],
+            POSITION: entry_info[POSITION],
+            PRICE_ENTRY: entry_info[PRICE_ENTRY],
+            PRICE_EXIT: exit_info[PRICE_EXIT],
+            PPVI_LOW: exit_info[PPVI_HIGH],
+            PPVI_HIGH: exit_info[PPVI_LOW]
+        }
+
+        return finished_trade
 
     def strategy_indicators(self):
-        pass
+        df = self.data
+        df["PPVI_HIGH"] = self.PPVI_BAND(self.PPVI_PERIOD, "High")
+        df["PPVI_LOW"] = self.PPVI_BAND(self.PPVI_PERIOD, "Low")
+
+        return df[-2:-1]
 
     def entry(self, entry_info):
-        print("CSP is looking for entry on {},  on the {} timeframe".format(self.pair, self.tf))
+        self.ref_entry.set(entry_info)
 
     def exit(self, exit_info):
-        pass
+        '''handles the mock exit for a trade and stores the trade values to db in the trade history node'''
+        finished_trade = self.trade_history_build(exit_info)
+        self.ref_trade_history.push(finished_trade)
+        self.ref_entry.set("null")
 
-    def update(self, subscribee):
-        print(f"{self.name} Looking for entry on {self.tf} for the {self.pair} trading pair: \n      {subscribee.data}")
+    def PPVI_BAND(self, period, high_low) -> pd.DataFrame:
+        df = self.data
+        rolling_price_sma = df.ta.sma(length=period)
+
+        # calculate rolling 3 period std off the highs
+        rolling_std = df[high_low].rolling(period).std()
+        # calculate rolling sma 3 off std highs series
+        rolling_ppvi_vol = ta.sma(rolling_std, length=period) * 2
+
+        # calculate bands
+        if high_low == 'High':
+            band = rolling_price_sma + rolling_ppvi_vol
+        else:
+            band = rolling_price_sma - rolling_ppvi_vol
+        column_name = 'SMA_' + str(period)
+        final = pd.DataFrame(index=df.index, data=band, columns=[column_name])
+
+        return final

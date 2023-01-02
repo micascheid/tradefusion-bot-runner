@@ -14,7 +14,7 @@ bbwp_hit_counter = 0
 
 TIME_IN = "time_in"
 TIME_OUT = "time_out"
-LONG = "long"
+POSITION = "position"
 PRICE_ENTRY = "price_entry"
 PRICE_EXIT = "price_exit"
 BBWP_ENTRY = "bbwp_entry"
@@ -24,7 +24,6 @@ BBWP = "BBWP"
 
 
 class KrownCross(BotInterface):
-    krowncross_dict = {}
 
     def __init__(self, name, tf, pair):
         super().__init__(name, tf, pair)
@@ -35,13 +34,14 @@ class KrownCross(BotInterface):
         self.trade_force_count = 0
 
     def entry_exit(self):
+
         # candle is a data frame of a single row containing the most recent candle to which to apply trade logic on
         candle = self.strategy_indicators()
         timestamp = str(candle.index[0])
-        ema_f = candle['EMA_9'][0]
-        ema_m = candle['EMA_21'][0]
-        ema_s = candle['EMA_55'][0]
-        price = candle['Close'][0]
+        ema_f = float(candle['EMA_9'][0])
+        ema_m = float(candle['EMA_21'][0])
+        ema_s = float(candle['EMA_55'][0])
+        price = float(candle['Close'][0])
         bbwp = candle['BBWP'][0]
         bbwp_hit_exit = 3
 
@@ -49,12 +49,12 @@ class KrownCross(BotInterface):
         short_entry_signals = 0
 
         #for testing purposes
-        trade_force = True
+        trade_force = False
         if trade_force:
             if self.trade_force_count == 1:
                 exit_info = {
                     "time_out": timestamp,
-                    "long": True,
+                    "position": True,
                     "price_exit": price,
                     "bbwp_exit": bbwp
                 }
@@ -63,7 +63,7 @@ class KrownCross(BotInterface):
                 return
             entry_info = {
                 "time_in": timestamp,
-                "long": True,
+                "position": True,
                 "price_entry": price,
                 "bbwp_entry": bbwp
             }
@@ -93,7 +93,7 @@ class KrownCross(BotInterface):
         # Take profit
         if bbwp >= bbwp_exit_signal:
             self.bbwp_hit_counter += 1
-        price = self.data.df.Close[-1]
+
         is_take_profit = (self.long_hold == 1 and self.bbwp_hit_counter == bbwp_hit_exit) or (
                     self.short_hold == 1 and
                     self.bbwp_hit_counter == bbwp_hit_exit)
@@ -106,20 +106,21 @@ class KrownCross(BotInterface):
             is_stop_loss = self.short_hold == 1 and ema_f > ema_m or price >= ema_s
 
         entry_info = {
-            "time_in": timestamp,
-            "long": True,
-            "price_entry": price,
-            "bbwp_entry": bbwp
+            TIME_IN: timestamp,
+            POSITION: "",
+            PRICE_ENTRY: price,
+            BBWP_ENTRY: bbwp
         }
 
         exit_info = {
-            "time_out": timestamp,
-            "price_exit": price,
-            "bbwp_exit": bbwp
+            TIME_OUT: timestamp,
+            PRICE_EXIT: price,
+            BBWP_EXIT: bbwp
         }
 
         # Long entry
         if self.long_hold == 0 and long_entry_signals == 3:
+            entry_info[POSITION] = "long"
             if self.short_hold == 1:
                 self.exit(exit_info)
                 self.short_hold = 0
@@ -135,6 +136,7 @@ class KrownCross(BotInterface):
             self.bbwp_hit_counter = 0
 
         if self.short_hold == 0 and short_entry_signals == 3:
+            entry_info[POSITION] = "short"
             if self.long_hold == 1:
                 self.exit(exit_info)
                 self.long_hold = 0
@@ -148,14 +150,12 @@ class KrownCross(BotInterface):
             self.last_purchase_price = 0
             self.bbwp_hit_counter = 0
 
-        print("Krown Cross is looking for entry on {},  on the {} timeframe".format(self.pair, self.tf))
-
     def exit(self, exit):
-        print("Krown Cross is looking for exit on {}".format(self.tf))
         '''handles the mock exit for a trade and stores the trade values to db in the trade history node'''
+
         # push trade to db
-        final_trade = self.trade_history_build(exit)
-        self.ref_trade_history.push(final_trade)
+        finished_trade = self.trade_history_build(exit)
+        self.ref_trade_history.push(finished_trade)
         # Remove entry from db
         self.ref_entry.set("null")
 
@@ -212,3 +212,4 @@ class KrownCross(BotInterface):
         bbwp_series = pd.DataFrame(index=bbands_series.index, data=bbwp_series, columns=['BBWP'])
 
         return bbwp_series
+

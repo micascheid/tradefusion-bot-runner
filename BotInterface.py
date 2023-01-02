@@ -60,6 +60,9 @@ class BotInterface(metaclass=ABCMeta):
         :return: nothing
         """
         self.data = subscribee.data
+        print(f"{self.name} Looking for entry on {self.tf} for the {self.pair} trading pair:")
+        print(self.data[-2:].to_string()+'\n\n')
+
         self.entry_exit()
 
     @abstractmethod

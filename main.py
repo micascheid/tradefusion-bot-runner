@@ -59,6 +59,7 @@ def kline_data_monitor_manager() -> {KlineDataMonitor}:
             new_dict[k+pair] = KlineDataMonitor(name=k+pair, tf=k, pair=pair)
     return new_dict
 
+
 def calc_job_times(timeframe) -> {}:
     timeframe_sec = TIME_FRAME_TO_SEC[timeframe]
     tf_unit = timeframe[-1]
@@ -114,6 +115,7 @@ def Main():
                 data_monitors['1hLTCUSD'].data = 10
             time.sleep(5)
 
+
 def kline_url_builder(tf, pair):
     return f'https://api.binance.us/api/v3/klines?symbol={pair}&interval={tf}'
 
@@ -129,7 +131,8 @@ def binance_to_dataframe(dub_arr) -> DataFrame:
     np_arr = numpy.delete(np_arr, range(5, 12), axis=1)
     columns = ['timestamp', 'Open', 'High', 'Low', 'Close']
     df = DataFrame(data=np_arr, columns=columns)
-    df['timestamp'] = df['timestamp'].apply(lambda epoch: datetime.fromtimestamp(int(epoch)/1000))
+    df['timestamp'] = df['timestamp'].apply(lambda epoch: datetime.fromtimestamp(int(epoch)/1000).astimezone(
+        tz=pytz.timezone('UTC')))
     df = df.set_index('timestamp')
     return df
 
