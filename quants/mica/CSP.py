@@ -3,6 +3,7 @@ import pandas as pd
 from firebase_admin import db
 import pandas_ta as ta
 from datetime import timedelta
+from Globals import TIME_FRAME_TO_SEC
 
 TIME_IN = "time_in"
 TIME_OUT = "time_out"
