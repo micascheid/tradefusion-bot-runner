@@ -1,5 +1,6 @@
 from abc import ABCMeta, abstractmethod
 from pandas import DataFrame
+from firebase_admin import db
 
 
 class BotInterface(metaclass=ABCMeta):
@@ -14,6 +15,8 @@ class BotInterface(metaclass=ABCMeta):
         BotInterface.bots_created[name, tf + pair] = self
         self.long_hold = 0
         self.short_hold = 0
+        self.ref_entry = db.reference(f'entry/{self.name}/{self.tf+self.pair}')
+        self.ref_trade_history = db.reference(f'trade_history/{self.name}/{self.tf+self.pair}/')
 
     def get_tf(self):
         return self.tf

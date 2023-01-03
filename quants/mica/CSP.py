@@ -2,6 +2,7 @@ from BotInterface import BotInterface
 import pandas as pd
 from firebase_admin import db
 import pandas_ta as ta
+from datetime import timedelta
 
 TIME_IN = "time_in"
 TIME_OUT = "time_out"
@@ -16,8 +17,6 @@ CLOSE = "Close"
 class CSP(BotInterface):
     def __init__(self, name, tf, pair):
         super().__init__(name, tf, pair)
-        self.ref_entry = db.reference(f'entry/krowncross/{self.tf + self.pair}')
-        self.ref_trade_history = db.reference(f'trade_history/{self.name}/{self.tf + self.pair}/')
         self.last_purchase_price = 0
         self.PPVI_PERIOD = 3
 
@@ -26,7 +25,10 @@ class CSP(BotInterface):
         take_profit_percent = 4
 
         candle = self.strategy_indicators()
-        timestamp = str(candle.index[0])
+        # The addition of a candle stick interval to the timestamp is that the decision of an entry/exit is based on
+        # the most recent close time, but the timestamp is an interval ago. EX: Enters based on 5m 11:25candle close
+        # by which time it closes is actually 11:30. Thus, entry is 11:30 not 11:25
+        timestamp = str(candle.index[0] + timedelta(seconds=TIME_FRAME_TO_SEC[self.tf]))
         price = float(candle['Close'][0])
         ppvi_high_band = float(candle['PPVI_HIGH'][0])
         ppvi_low_band = float(candle['PPVI_LOW'][0])

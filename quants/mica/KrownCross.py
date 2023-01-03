@@ -3,6 +3,8 @@ import pandas_ta as ta
 import numpy as np
 import pandas as pd
 from firebase_admin import db
+from datetime import timedelta
+from Globals import TIME_FRAME_TO_SEC, INTERVAL_UNITS
 
 EMA_F = 9 #f = fast
 EMA_M = 21 #m = medium
@@ -29,15 +31,17 @@ class KrownCross(BotInterface):
         super().__init__(name, tf, pair)
         print("Being Created")
         self.bbwp_hit_counter = 0
-        self.ref_entry = db.reference(f'entry/krowncross/{self.tf+self.pair}')
-        self.ref_trade_history = db.reference(f'trade_history/{self.name}/{self.tf+self.pair}/')
         self.trade_force_count = 0
 
     def entry_exit(self):
 
-        # candle is a data frame of a single row containing the most recent candle to which to apply trade logic on
+        # candle is a data frame of a single row containing the most recent candle close to which to apply trade
+        # logic on
         candle = self.strategy_indicators()
-        timestamp = str(candle.index[0])
+        #The addition of a candle stick interval to the timestamp is that the decision of an entry/exit is based on
+        # the most recent close time, but the timestamp is an interval ago. EX: Enters based on 5m 11:25candle close
+        # by which time it closes is actually 11:30. Thus, entry is 11:30 not 11:25
+        timestamp = str(candle.index[0]+timedelta(seconds=TIME_FRAME_TO_SEC[self.tf]))
         ema_f = float(candle['EMA_9'][0])
         ema_m = float(candle['EMA_21'][0])
         ema_s = float(candle['EMA_55'][0])
@@ -48,28 +52,6 @@ class KrownCross(BotInterface):
         long_entry_signals = 0
         short_entry_signals = 0
 
-        #for testing purposes
-        trade_force = False
-        if trade_force:
-            if self.trade_force_count == 1:
-                exit_info = {
-                    "time_out": timestamp,
-                    "position": True,
-                    "price_exit": price,
-                    "bbwp_exit": bbwp
-                }
-                self.exit(exit_info)
-                self.trade_force_count = 0
-                return
-            entry_info = {
-                "time_in": timestamp,
-                "position": True,
-                "price_entry": price,
-                "bbwp_entry": bbwp
-            }
-            self.entry(entry_info)
-            self.trade_force_count += 1
-            return
 
         seperation_calc = abs((price - ema_m) / ema_m) * 100
 
@@ -171,7 +153,7 @@ class KrownCross(BotInterface):
         finished_trade = {
             "time_in": entry_info[TIME_IN],
             "time_out": exit_info[TIME_OUT],
-            "long": entry_info[LONG],
+            "long": entry_info[POSITION],
             "price_entry": entry_info[PRICE_ENTRY],
             "price_exit": exit_info[PRICE_EXIT],
             "bbwp_entry": entry_info[BBWP_ENTRY],
