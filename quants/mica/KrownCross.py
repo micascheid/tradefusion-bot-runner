@@ -141,9 +141,9 @@ class KrownCross(BotInterface):
         # Remove entry from db
         self.ref_entry.set("null")
 
-    def entry(self, entry_info):
-        '''Sends trade entry information to the entry nodes table'''
-        self.ref_entry.set(entry_info)
+    # def entry(self, entry_info):
+    #     '''Sends trade entry information to the entry nodes table'''
+
 
     def trade_history_build(self, exit_info):
         #First get entry info

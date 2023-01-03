@@ -130,8 +130,8 @@ class CSP(BotInterface):
 
         return df[-2:-1]
 
-    def entry(self, entry_info):
-        self.ref_entry.set(entry_info)
+    # def entry(self, entry_info):
+    #     self.ref_entry.set(entry_info)
 
     def exit(self, exit_info):
         '''handles the mock exit for a trade and stores the trade values to db in the trade history node'''

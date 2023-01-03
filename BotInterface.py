@@ -24,7 +24,7 @@ class BotInterface(metaclass=ABCMeta):
     def get_pair(self):
         return self.pair
 
-    @abstractmethod
+
     def entry(self, entry_info):
         """
         :description: The entry_info json object gets pushed to entry/{strategy}/tf+pair/
@@ -33,7 +33,8 @@ class BotInterface(metaclass=ABCMeta):
         :param entry_info: a json object that contains both the candle and strategy metrics for a found upon entry
         :return: Nothing, is a db management function
         """
-        pass
+        print(f'"{self.name} IS MAKING ENTRY ON {self.tf} for {self.pair}')
+        self.ref_entry.set(entry_info)
 
     @abstractmethod
     def exit(self, exit_info):
@@ -63,7 +64,7 @@ class BotInterface(metaclass=ABCMeta):
         :return: nothing
         """
         self.data = subscribee.data
-        print(f"{self.name} Looking for entry on {self.tf} for the {self.pair} trading pair:")
+        print(f"{self.name} looking for entry on {self.tf} for the {self.pair} trading pair:")
         print(self.data[-2:].to_string()+'\n\n')
 
         self.entry_exit()
