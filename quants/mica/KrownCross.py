@@ -132,19 +132,6 @@ class KrownCross(BotInterface):
             self.last_purchase_price = 0
             self.bbwp_hit_counter = 0
 
-    def exit(self, exit):
-        '''handles the mock exit for a trade and stores the trade values to db in the trade history node'''
-
-        # push trade to db
-        finished_trade = self.trade_history_build(exit)
-        self.ref_trade_history.push(finished_trade)
-        # Remove entry from db
-        self.ref_entry.set("null")
-
-    # def entry(self, entry_info):
-    #     '''Sends trade entry information to the entry nodes table'''
-
-
     def trade_history_build(self, exit_info):
         #First get entry info
         entry_info = self.ref_entry.get()

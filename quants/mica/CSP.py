@@ -130,15 +130,6 @@ class CSP(BotInterface):
 
         return df[-2:-1]
 
-    # def entry(self, entry_info):
-    #     self.ref_entry.set(entry_info)
-
-    def exit(self, exit_info):
-        '''handles the mock exit for a trade and stores the trade values to db in the trade history node'''
-        finished_trade = self.trade_history_build(exit_info)
-        self.ref_trade_history.push(finished_trade)
-        self.ref_entry.set("null")
-
     def PPVI_BAND(self, period, high_low) -> pd.DataFrame:
         df = self.data
         rolling_price_sma = df.ta.sma(length=period)

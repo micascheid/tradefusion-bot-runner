@@ -36,16 +36,18 @@ class BotInterface(metaclass=ABCMeta):
         print(f'"{self.name} IS MAKING ENTRY ON {self.tf} for {self.pair}')
         self.ref_entry.set(entry_info)
 
-    @abstractmethod
     def exit(self, exit_info):
         """
-        :description: handles db management for the exit of a trade
+        :description: handles the mock exit for a trade and stores the trade values to db in the trade history node
         :param exit_info: The exit_info json object contains the entirety of a trade for a given bot which contains
             all entry and exit info of the indicators for the strategy along with the candle metrics. TODO: add in
             trade metrics
         :return: Nothing, is a db management function
         """
-        pass
+        finished_trade = self.trade_history_build(exit)
+        self.ref_trade_history.push(finished_trade)
+        # Remove entry from db
+        self.ref_entry.set("null")
 
     @abstractmethod
     def entry_exit(self):
