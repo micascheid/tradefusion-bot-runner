@@ -22,9 +22,6 @@ REF = DBStuffForNow.db_initializer()
 def db_get_active_bots() -> dict:
     return REF.child(DBPaths.ACTIVEBOTS.value).get()
 
-# def db_get_active_tfs() -> dict:
-#     return REF.child(DBPaths.ACTIVETFS.value).get()
-
 def db_get_timeframes_pairs() -> dict:
     return REF.child(DBPaths.TIMEFRAMES_PAIRS.value).get()
 
@@ -93,12 +90,10 @@ def Main():
                 scheduler.add_job(data_pull, 'interval', args=[tf, pair, monitor], **job_details_dict)
             scheduler.start()
 
-            start_bot_runner = input("Would you like to keep going?")
-            if start_bot_runner == "n":
+            start_bot_runner = input("Use \"killbots\" to terminate, otherwise do not input")
+            if start_bot_runner == "killbots":
                 print("exiting...")
                 break
-            if start_bot_runner == "ltc":
-                data_monitors['1hLTCUSD'].data = 10
             time.sleep(5)
 
 

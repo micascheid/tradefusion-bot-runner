@@ -68,33 +68,5 @@
     "1h": ["ADAUSD","BTCUSDT", "ETHUSD", "LTCUSD"],
     "2h": ["BTCUSDT", "ETHUSD","LTCUSD"],
     "4h": ["BTCUSDT", "ETHUSD","LTCUSD"]
-  },
-  "entry": {
-    "krowncross" : {
-      "1hADAUSD": {
-        "time_in": "blah",
-        "long": "True",
-        "price_entry": ".24",
-        "bbwp_entry": "50"
-      }
-    },
-    "csp" : {
-
-    }
-  },
-  "trade_history": {
-    "krowncross": {
-      "1hADAUSD": {
-        "uid": {
-          "time_in": "timestamp",
-          "time_out": "timestamp",
-          "long": "True",
-          "price_entry": ".24",
-          "price_exit": ".26",
-          "bbwp_entry": "50",
-          "bbwp_exit": "94"
-        }
-      }
-    }
   }
 }
