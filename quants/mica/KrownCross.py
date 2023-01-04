@@ -14,7 +14,7 @@ EMA_M = 21 #m = medium
 EMA_S = 55 # s = slow
 separation = 2
 bbwp_entry_signal = 60
-bbwp_exit_signal = 70
+bbwp_exit_signal = 0
 bbwp_hit_counter = 0
 
 TIME_IN = "time_in"

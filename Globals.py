@@ -19,10 +19,11 @@ INTERVAL_UNITS = {
     "w": "weeks"
 }
 
+
 def trade_duration(entry_time, exit_time):
     try:
-        dt_entry = datetime.strptime(entry_time, '%Y-%m-%d H:%M:%S%z')
-        dt_exit = datetime.strptime(exit_time, '%Y-%m-%d H:%M:%S%z')
+        dt_entry = datetime.strptime(entry_time, '%Y-%m-%d %H:%M:%S%z')
+        dt_exit = datetime.strptime(exit_time, '%Y-%m-%d %H:%M:%S%z')
         time_length = dt_exit - dt_entry
 
         s = time_length.total_seconds()
