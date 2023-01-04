@@ -15,6 +15,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from BotFactory import BotFactory
 from BotObj import BotObj
 import DBStuffForNow
+from yaspin import yaspin
 
 
 REF = DBStuffForNow.db_initializer()
@@ -90,11 +91,16 @@ def Main():
                 scheduler.add_job(data_pull, 'interval', args=[tf, pair, monitor], **job_details_dict)
             scheduler.start()
 
-            start_bot_runner = input("Use \"killbots\" to terminate, otherwise do not input")
+            start_bot_runner = input("Use \"killbots\" to terminate, or RELOAD as instructed else leave alone!")
+
             if start_bot_runner == "killbots":
                 print("exiting...")
                 break
-            time.sleep(5)
+            if start_bot_runner == "RELOAD":
+                print("alright about to reload bots")
+                pass
+
+
 
 
 def kline_url_builder(tf, pair):

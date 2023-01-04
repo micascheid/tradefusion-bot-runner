@@ -44,7 +44,7 @@ class BotInterface(metaclass=ABCMeta):
             trade metrics
         :return: Nothing, is a db management function
         """
-        finished_trade = self.trade_history_build(exit)
+        finished_trade = self.trade_history_build(exit_info)
         self.ref_trade_history.push(finished_trade)
         # Remove entry from db
         self.ref_entry.set("null")
