@@ -1,10 +1,13 @@
+import datetime
+
 from BotInterface import BotInterface
 import pandas_ta as ta
 import numpy as np
 import pandas as pd
 from firebase_admin import db
 from datetime import timedelta
-from Globals import TIME_FRAME_TO_SEC, INTERVAL_UNITS
+from Globals import TIME_FRAME_TO_SEC, trade_duration, pnl
+from datetime import datetime
 
 EMA_F = 9 #f = fast
 EMA_M = 21 #m = medium
@@ -23,6 +26,8 @@ BBWP_ENTRY = "bbwp_entry"
 BBWP_EXIT = "bbwp_exit"
 CLOSE = "Close"
 BBWP = "BBWP"
+PNL = "pnl"
+TRADE_DURATION = "trade_duration"
 
 
 class KrownCross(BotInterface):
@@ -138,13 +143,15 @@ class KrownCross(BotInterface):
 
         # Merge the entry and exit info into one dict for the trade_history node in the db
         finished_trade = {
-            "time_in": entry_info[TIME_IN],
-            "time_out": exit_info[TIME_OUT],
-            "long": entry_info[POSITION],
-            "price_entry": entry_info[PRICE_ENTRY],
-            "price_exit": exit_info[PRICE_EXIT],
-            "bbwp_entry": entry_info[BBWP_ENTRY],
-            "bbwp_exit": exit_info[BBWP_EXIT]
+            TIME_IN: entry_info[TIME_IN],
+            TIME_OUT: exit_info[TIME_OUT],
+            POSITION: entry_info[POSITION],
+            PRICE_ENTRY: entry_info[PRICE_ENTRY],
+            PRICE_EXIT: exit_info[PRICE_EXIT],
+            BBWP_ENTRY: entry_info[BBWP_ENTRY],
+            BBWP_EXIT: exit_info[BBWP_EXIT],
+            PNL: pnl(entry_info[POSITION], float(entry_info[PRICE_ENTRY]), float(exit_info[PRICE_EXIT])),
+            TRADE_DURATION: trade_duration(entry_info[TIME_IN], exit_info[TIME_OUT])
         }
 
         return finished_trade
@@ -181,4 +188,6 @@ class KrownCross(BotInterface):
         bbwp_series = pd.DataFrame(index=bbands_series.index, data=bbwp_series, columns=['BBWP'])
 
         return bbwp_series
+
+
 

@@ -3,7 +3,7 @@ import pandas as pd
 from firebase_admin import db
 import pandas_ta as ta
 from datetime import timedelta
-from Globals import TIME_FRAME_TO_SEC
+from Globals import TIME_FRAME_TO_SEC, trade_duration, pnl
 
 TIME_IN = "time_in"
 TIME_OUT = "time_out"
@@ -13,6 +13,8 @@ PRICE_EXIT = "price_exit"
 PPVI_HIGH = "ppvi_high"
 PPVI_LOW = "ppvi_low"
 CLOSE = "Close"
+PNL = "pnl"
+TRADE_DURATION = "trade_duration"
 
 
 class CSP(BotInterface):
@@ -118,7 +120,9 @@ class CSP(BotInterface):
             PRICE_ENTRY: entry_info[PRICE_ENTRY],
             PRICE_EXIT: exit_info[PRICE_EXIT],
             PPVI_LOW: exit_info[PPVI_HIGH],
-            PPVI_HIGH: exit_info[PPVI_LOW]
+            PPVI_HIGH: exit_info[PPVI_LOW],
+            PNL: pnl(entry_info[POSITION], float(entry_info[PRICE_ENTRY]), float(exit_info[PRICE_EXIT])),
+            TRADE_DURATION: trade_duration(entry_info[TIME_IN], exit_info[TIME_OUT])
         }
 
         return finished_trade
