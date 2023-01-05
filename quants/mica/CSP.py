@@ -21,11 +21,14 @@ class CSP(BotInterface):
     def __init__(self, name, tf, pair):
         super().__init__(name, tf, pair)
         self.last_purchase_price = 0
-        self.PPVI_PERIOD = 3
+        self.PPVI_PERIOD = 5
+        self.force_entry = False
+        self.force_exit = False
+        self.in_trade = 0
 
     def entry_exit(self):
         stop_loss_percent = 1
-        take_profit_percent = 4
+        take_profit_percent = 2
 
         candle = self.strategy_indicators()
         # The addition of a candle stick interval to the timestamp is that the decision of an entry/exit is based on
@@ -35,6 +38,8 @@ class CSP(BotInterface):
         price = float(candle['Close'][0])
         ppvi_high_band = float(candle['PPVI_HIGH'][0])
         ppvi_low_band = float(candle['PPVI_LOW'][0])
+        # print(f"{self.name} is evaluating the below candle for the {self.pair} on the {self.tf} timeframe\n"
+        #       f"{candle.to_string()}\n\n")
 
         long_entry_signals = 0
         short_entry_signals = 0
@@ -78,6 +83,18 @@ class CSP(BotInterface):
             "ppvi_low": ppvi_low_band
         }
 
+        if self.force_exit and self.in_trade == 1:
+            self.exit(exit_info)
+            self.in_trade = 0
+            return
+        if self.force_entry:
+            entry_info['position'] = "long"
+            self.entry(entry_info)
+            self.in_trade = 1
+            return
+
+
+
         # Long Entry and Short Check Exit
         if self.long_hold == 0 and long_entry_signals >= 1:
             entry_info[POSITION] = "long"
@@ -110,20 +127,34 @@ class CSP(BotInterface):
 
     def trade_history_build(self, exit_info):
         #First get entry info
-        entry_info = self.ref_entry
+        entry_info = self.ref_entry.get()
 
         # Merge the entry and exit info into one dict for the trade_history node in the db
-        finished_trade = {
-            TIME_IN: entry_info[TIME_IN],
-            TIME_OUT: exit_info[TIME_OUT],
-            POSITION: entry_info[POSITION],
-            PRICE_ENTRY: entry_info[PRICE_ENTRY],
-            PRICE_EXIT: exit_info[PRICE_EXIT],
-            PPVI_LOW: exit_info[PPVI_HIGH],
-            PPVI_HIGH: exit_info[PPVI_LOW],
-            PNL: pnl(entry_info[POSITION], float(entry_info[PRICE_ENTRY]), float(exit_info[PRICE_EXIT])),
-            TRADE_DURATION: trade_duration(entry_info[TIME_IN], exit_info[TIME_OUT])
-        }
+        try:
+            finished_trade = {
+                TIME_IN: entry_info[TIME_IN],
+                TIME_OUT: exit_info[TIME_OUT],
+                POSITION: entry_info[POSITION],
+                PRICE_ENTRY: entry_info[PRICE_ENTRY],
+                PRICE_EXIT: exit_info[PRICE_EXIT],
+                PPVI_LOW: exit_info[PPVI_HIGH],
+                PPVI_HIGH: exit_info[PPVI_LOW],
+                PNL: pnl(entry_info[POSITION], float(entry_info[PRICE_ENTRY]), float(exit_info[PRICE_EXIT])),
+                TRADE_DURATION: trade_duration(entry_info[TIME_IN], exit_info[TIME_OUT])
+            }
+        except ValueError:
+            print("Unable to create final trade metrics, returning empty final trade")
+            finished_trade = {
+                TIME_IN: "",
+                TIME_OUT: "",
+                POSITION: "",
+                PRICE_ENTRY: "",
+                PRICE_EXIT: "",
+                PPVI_LOW: "",
+                PPVI_HIGH: "",
+                PNL: "",
+                TRADE_DURATION: ""
+            }
 
         return finished_trade
 

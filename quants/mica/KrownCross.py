@@ -34,7 +34,6 @@ class KrownCross(BotInterface):
 
     def __init__(self, name, tf, pair):
         super().__init__(name, tf, pair)
-        print("Being Created")
         self.bbwp_hit_counter = 0
         self.trade_force_count = 0
 
@@ -52,6 +51,8 @@ class KrownCross(BotInterface):
         ema_s = float(candle['EMA_55'][0])
         price = float(candle['Close'][0])
         bbwp = candle['BBWP'][0]
+        # print(f"{self.name} is evaluating the below candle for the {self.pair} on the {self.tf} timeframe\n"
+        #       f"{candle.to_string()}\n\n")
         bbwp_hit_exit = 3
 
         long_entry_signals = 0

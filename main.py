@@ -91,7 +91,7 @@ def Main():
                 scheduler.add_job(data_pull, 'interval', args=[tf, pair, monitor], **job_details_dict)
             scheduler.start()
 
-            start_bot_runner = input("Use \"killbots\" to terminate, or RELOAD as instructed else leave alone!")
+            start_bot_runner = input("Use \"killbots\" to terminate, or RELOAD as instructed else leave alone!\n")
 
             if start_bot_runner == "killbots":
                 print("exiting...")
@@ -101,10 +101,9 @@ def Main():
                 pass
 
 
-
-
 def kline_url_builder(tf, pair):
     return f'https://api.binance.us/api/v3/klines?symbol={pair}&interval={tf}'
+
 
 def data_pull(tf, pair, data_monitor):
     print("being called to print data")
@@ -112,6 +111,7 @@ def data_pull(tf, pair, data_monitor):
     resp = requests.get(url).json()
     data = binance_to_dataframe(resp)
     data_monitor.data = data
+
 
 def binance_to_dataframe(dub_arr) -> DataFrame:
     np_arr = np.array(dub_arr)
