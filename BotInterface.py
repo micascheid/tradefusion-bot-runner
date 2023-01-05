@@ -66,7 +66,7 @@ class BotInterface(metaclass=ABCMeta):
         :return: nothing
         """
         self.data = subscribee.data
-        # print(f"{self.name} looking for entry on {self.tf} for the {self.pair} pair:\n{self.data[-2:].to_string()}\n\n")
+        print(f"{self.name} looking for entry on {self.tf} for the {self.pair} pair")
         self.entry_exit()
 
     @abstractmethod
