@@ -1,6 +1,7 @@
 from abc import ABCMeta, abstractmethod
 from pandas import DataFrame
 from firebase_admin import db
+from Globals import LIVE_PNL, pnl, Entry, Exit
 
 
 class BotInterface(metaclass=ABCMeta):
@@ -48,6 +49,20 @@ class BotInterface(metaclass=ABCMeta):
         self.ref_trade_history.push(finished_trade)
         # Remove entry from db
         self.ref_entry.set("null")
+
+    def trade_update(self, current_price):
+        '''
+        :description: Currently updates the current trades pnl after the most recent candle closure. If an exit isn't made
+        :param entry_info:
+        :return: None
+        '''
+        try:
+            entry = self.ref_entry.get()
+            entry[LIVE_PNL] = pnl(entry[Entry.POSITION.value], entry[Entry.PRICE_ENTRY.value], current_price)
+            self.ref_entry.update(entry)
+        except ConnectionError:
+            print("BotInterface ERROR: THERE HAS BEEN AN ISSUE CONNECTING OR RECIEVING DATA FOR TRADE UPDATE\nLIVE "
+                  "PNL FOR THIS BOT WILL REMAIN AS IS")
 
     @abstractmethod
     def entry_exit(self):

@@ -1,9 +1,11 @@
 import os
 from dotenv import load_dotenv
 from datetime import datetime
+from enum import Enum
+
 load_dotenv()
 DB_URL = os.getenv('db_url')
-
+LIVE_PNL = "live_pnl"
 TIME_FRAME_TO_SEC = {
     "5m": 300,
     "30m": 1800,
@@ -18,6 +20,21 @@ INTERVAL_UNITS = {
     "d": "days",
     "w": "weeks"
 }
+
+
+class Entry(Enum):
+    CLOSE = "Close"
+    LIVE_PNL = "live_pnl"
+    POSITION = "position"
+    PRICE_ENTRY = "price_entry"
+    TIME_IN = "time_in"
+
+
+class Exit(Enum):
+    PNL = "pnl"
+    PRICE_EXIT = "price_exit"
+    TIME_OUT = "time_out"
+    TRADE_DURATION = "trade_duration"
 
 
 def trade_duration(entry_time, exit_time):
