@@ -185,9 +185,9 @@ class KrownCross(BotInterface):
         df = self.data
         STD = 2.0
         length = 13
-        BBW = "BBW_"+str(length)+"_"+str(STD)
+        BBW = "BBB_"+str(length)+"_"+str(STD)
         LOOKBACK = 252
-        bbands_series = ta.bbands(df[CLOSE].astype(float), std=STD, mamode='sma', length=13)
+        bbands_series = ta.bbands(df[Entry.CLOSE.value].astype(float), std=STD, mamode='sma', length=13)
         BBW = bbands_series[BBW]
         bbwp_series = np.array([])
         bbwp = [0.0] * LOOKBACK
