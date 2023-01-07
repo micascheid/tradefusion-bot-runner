@@ -2,6 +2,7 @@ import os
 from dotenv import load_dotenv
 from datetime import datetime
 from enum import Enum
+from datetime import timedelta
 
 load_dotenv()
 DB_URL = os.getenv('db_url')
@@ -48,7 +49,7 @@ def trade_duration(entry_time, exit_time):
         hours, remainder = divmod(remainder, 3600)
         minutes, seconds = divmod(remainder, 60)
 
-        return f"{days}:{hours}:{minutes} {seconds}"
+        return '{:02}:{:02}:{:02}'.format(int(days), int(hours), int(minutes))
     except ValueError:
         print("Unable to get trade duration, will return emty string")
         return ""
