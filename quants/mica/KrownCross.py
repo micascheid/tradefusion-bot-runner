@@ -163,8 +163,7 @@ class KrownCross(BotInterface):
             BBWP_ENTRY: entry_info[BBWP_ENTRY],
             BBWP_EXIT: exit_info[BBWP_EXIT],
             Exit.PNL.value: pnl(entry_info[Entry.POSITION.value], float(entry_info[Entry.PRICE_ENTRY.value]),
-                           float(exit_info[
-                                                                                                     Exit.PRICE_EXIT.value])),
+                           float(exit_info[Exit.PRICE_EXIT.value])),
             Exit.TRADE_DURATION.value: trade_duration(entry_info[Entry.TIME_IN.value], exit_info[Exit.TIME_OUT.value])
         }
 

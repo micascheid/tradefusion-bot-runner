@@ -134,7 +134,7 @@ class CSP(BotInterface):
                 PPVI_HIGH: exit_info[PPVI_LOW],
                 Exit.PNL.value: pnl(entry_info[Entry.POSITION.value], float(entry_info[Entry.PRICE_ENTRY.value]),
                                     float(exit_info[Exit.PRICE_EXIT.value])),
-                Exit.TRADE_DURATION.value: trade_duration(entry_info[Entry.PRICE_ENTRY.value], exit_info[
+                Exit.TRADE_DURATION.value: trade_duration(entry_info[Entry.TIME_IN.value], exit_info[
                     Exit.TIME_OUT.value])
             }
         except ValueError:
