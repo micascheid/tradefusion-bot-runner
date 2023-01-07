@@ -58,47 +58,49 @@ def calc_job_times(timeframe) -> {}:
 
 
 def Main():
-    start_bot_runner = input("Would you like to start bot_runner?[y/n]")
+    # start_bot_runner = input("Would you like to start bot_runner?[y/n]")
     data_monitors = []
     list_bots = []
-    if start_bot_runner == "y":
-        while start_bot_runner != "n":
-            # Check the bots and the timeframe and pairs I need to make them on
-            list_bots = create_bot_list(db_get_active_bots())
-            print("Finished pulling bots from db")
+    # if start_bot_runner == "y":
+    print("Here we go! Starting up tradefusion-bot-runner")
+    start_bot_runner = "y"
+    while start_bot_runner != "n":
+        # Check the bots and the timeframe and pairs I need to make them on
+        list_bots = create_bot_list(db_get_active_bots())
+        print("Finished pulling bots from db")
 
-            # Delegate the bot making task to the factory
-            bot_factory = BotFactory(list_bots)
+        # Delegate the bot making task to the factory
+        bot_factory = BotFactory(list_bots)
 
-            # Instantiate all bots
-            my_new_bots = bot_factory.create()
+        # Instantiate all bots
+        my_new_bots = bot_factory.create()
 
-            # Create the data monitors per time frame
-            data_monitors = kline_data_monitor_manager()
+        # Create the data monitors per time frame
+        data_monitors = kline_data_monitor_manager()
 
-            # Attach all bots to their perspective data monitor
-            for key in data_monitors.keys():
-                temp_list = [bot for bot in my_new_bots if bot.get_tf()+bot.get_pair() == key]
-                for b in temp_list:
-                    data_monitors[key].attach(b)
+        # Attach all bots to their perspective data monitor
+        for key in data_monitors.keys():
+            temp_list = [bot for bot in my_new_bots if bot.get_tf()+bot.get_pair() == key]
+            for b in temp_list:
+                data_monitors[key].attach(b)
 
-            # Add job with each data monitor and pass in data monitor
-            scheduler = BackgroundScheduler()
-            for key, monitor in data_monitors.items():
-                tf = monitor.get_tf()
-                pair = monitor.get_pair()
-                job_details_dict = calc_job_times(tf)
-                scheduler.add_job(data_pull, 'interval', args=[tf, pair, monitor], **job_details_dict)
-            scheduler.start()
+        # Add job with each data monitor and pass in data monitor
+        scheduler = BackgroundScheduler()
+        for key, monitor in data_monitors.items():
+            tf = monitor.get_tf()
+            pair = monitor.get_pair()
+            job_details_dict = calc_job_times(tf)
+            scheduler.add_job(data_pull, 'interval', args=[tf, pair, monitor], **job_details_dict)
+        scheduler.start()
 
-            start_bot_runner = input("Use \"killbots\" to terminate, or RELOAD as instructed else leave alone!\n")
+        start_bot_runner = input("Use \"killbots\" to terminate, or RELOAD as instructed else leave alone!\n")
 
-            if start_bot_runner == "killbots":
-                print("exiting...")
-                break
-            if start_bot_runner == "RELOAD":
-                print("alright about to reload bots")
-                pass
+        if start_bot_runner == "killbots":
+            print("exiting...")
+            break
+        if start_bot_runner == "RELOAD":
+            print("alright about to reload bots")
+            pass
 
 
 def kline_url_builder(tf, pair):
