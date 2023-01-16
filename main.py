@@ -11,11 +11,14 @@ import time
 from DBPaths import DBPaths
 import firebase_admin
 from firebase_admin import credentials, db
+import logging
+logging.getLogger('apscheduler').setLevel(logging.WARNING)
 from apscheduler.schedulers.background import BackgroundScheduler
 from BotFactory import BotFactory
 from BotObj import BotObj
 import DBStuffForNow
 from yaspin import yaspin
+# import logging
 
 
 REF = DBStuffForNow.db_initializer()
@@ -45,31 +48,56 @@ def kline_data_monitor_manager() -> {KlineDataMonitor}:
 
 
 def calc_job_times(timeframe) -> {}:
+    #Get the timeframe of the job in seconds
     timeframe_sec = TIME_FRAME_TO_SEC[timeframe]
     tf_unit = timeframe[-1]
     t_amount = int(timeframe[:-1])
     interval_val = INTERVAL_UNITS[tf_unit]
     t_now = time.time()
     tz = pytz.timezone('UTC')
-    next_run_time = datetime.fromtimestamp((t_now - (t_now%TIME_FRAME_TO_SEC[timeframe])) + TIME_FRAME_TO_SEC[
-        timeframe], tz=tz)
+    next_run_time = datetime.fromtimestamp((t_now - (t_now % timeframe_sec)) + timeframe_sec, tz=tz)
     return {interval_val: t_amount, 'next_run_time': next_run_time}
 
 
+# class ContextFilter(logging.Filter):
+#     """
+#     This is a filter which injects contextual information into the log.
+#
+#     Rather than use actual contextual information, we just use random
+#     data in this demo.
+#     """
+#
+#     JOBS = ['Added Job', '']
+#
+#     def filter(self, record):
+#
+#         record.ip = choice(ContextFilter.IPS)
+#         record.user = choice(ContextFilter.USERS)
+#         return True
 
 def Main():
+    # Startup the ole logger
+    logging.basicConfig(filename="./logs/log.txt", level=logging.INFO,
+                        format='%(asctime)s - %(levelname)s - %(module)s - %(message)s')
+    tz = pytz.timezone('UTC')
+    logging.Formatter.converter = time.gmtime
+    # logging.getLogger('apscheduler.scheduler').propagate = False
+    # logging.getLogger('apscheduler.scheduler.default').propagate = False
+    # logging.getLogger('base').propagate = False
+    logging.info("\n\n----STARTING NEW LOG AT {}---------".format(datetime.now(tz=pytz.timezone('UTC')).replace(
+        microsecond=0)))
     # start_bot_runner = input("Would you like to start bot_runner?[y/n]")
     data_monitors = []
     list_bots = []
     # if start_bot_runner == "y":
-    print("Here we go! Starting up tradefusion-bot-runner")
+    logging.info("Here we go! Starting up tradefusion-bot-runner")
     start_bot_runner = "y"
     # while start_bot_runner != "n":
 
 
     # Check the bots and the timeframe and pairs I need to make them on
     list_bots = create_bot_list(db_get_active_bots())
-    print("Finished pulling bots from db")
+    logging.info("Finished pulling bots from db")
 
     # Delegate the bot making task to the factory
     bot_factory = BotFactory(list_bots)
@@ -112,7 +140,7 @@ def kline_url_builder(tf, pair):
 
 
 def data_pull(tf, pair, data_monitor):
-    print("being called to print data")
+    # logger.info("Being called to print data'")
     url = kline_url_builder(tf, pair)
     resp = requests.get(url).json()
     data = binance_to_dataframe(resp)
@@ -132,8 +160,5 @@ def binance_to_dataframe(dub_arr) -> DataFrame:
 
 if __name__ == '__main__':
     Main()
-
-    # test_dict = REF.child('active_bots')
-    # print(test_dict)
 
 

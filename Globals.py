@@ -1,9 +1,13 @@
+import logging
 import os
 from dotenv import load_dotenv
 from datetime import datetime
 from enum import Enum
+import time
+import pytz
 from datetime import timedelta
 
+logger = logging.getLogger('root')
 load_dotenv()
 DB_URL = os.getenv('db_url')
 LIVE_PNL = "live_pnl"
@@ -51,7 +55,7 @@ def trade_duration(entry_time, exit_time):
 
         return '{:02}:{:02}:{:02}'.format(int(days), int(hours), int(minutes))
     except ValueError:
-        print("Unable to get trade duration, will return emty string")
+        logging.error("Unable to get trade duration, will return empty string")
         return ""
 
 

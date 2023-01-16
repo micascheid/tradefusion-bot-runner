@@ -1,5 +1,6 @@
 import datetime
-
+from logging import ERROR, WARNING, INFO
+import logging
 from BotInterface import BotInterface
 import pandas_ta as ta
 import numpy as np
@@ -23,6 +24,8 @@ BBWP_ENTRY = "bbwp_entry"
 BBWP_EXIT = "bbwp_exit"
 CLOSE = "Close"
 BBWP = "BBWP"
+logger = logging.getLogger('root')
+
 
 
 class KrownCross(BotInterface):
@@ -146,26 +149,42 @@ class KrownCross(BotInterface):
                                               current_price)
             self.ref_entry.update(entry)
         except ConnectionError:
-            print("BotInterface ERROR: THERE HAS BEEN AN ISSUE CONNECTING OR RECIEVING DATA FOR TRADE UPDATE\nLIVE "
-                  "PNL FOR THIS BOT WILL REMAIN AS IS")
+            msg = f'{self.tf}: BotInterface ERROR: THERE HAS BEEN AN ISSUE CONNECTING OR RECIEVING DATA FOR TRADE ' \
+                  f'UPDATE\nLIVE PNL FOR THIS BOT WILL REMAIN AS IS'
+            logging.error(msg)
 
     def trade_history_build(self, exit_info):
         #First get entry info
         entry_info = self.ref_entry.get()
 
-        # Merge the entry and exit info into one dict for the trade_history node in the db
-        finished_trade = {
-            Entry.TIME_IN.value: entry_info[Entry.TIME_IN.value],
-            Exit.TIME_OUT.value: exit_info[Exit.TIME_OUT.value],
-            Entry.POSITION.value: entry_info[Entry.POSITION.value],
-            Entry.PRICE_ENTRY.value: entry_info[Entry.PRICE_ENTRY.value],
-            Exit.PRICE_EXIT.value: exit_info[Exit.PRICE_EXIT.value],
-            BBWP_ENTRY: entry_info[BBWP_ENTRY],
-            BBWP_EXIT: exit_info[BBWP_EXIT],
-            Exit.PNL.value: pnl(entry_info[Entry.POSITION.value], float(entry_info[Entry.PRICE_ENTRY.value]),
-                           float(exit_info[Exit.PRICE_EXIT.value])),
-            Exit.TRADE_DURATION.value: trade_duration(entry_info[Entry.TIME_IN.value], exit_info[Exit.TIME_OUT.value])
-        }
+        # Merge the entry and exit info into one dict for" the trade_history node in the db
+        try:
+            finished_trade = {
+                Entry.TIME_IN.value: entry_info[Entry.TIME_IN.value],
+                Exit.TIME_OUT.value: exit_info[Exit.TIME_OUT.value],
+                Entry.POSITION.value: entry_info[Entry.POSITION.value],
+                Entry.PRICE_ENTRY.value: entry_info[Entry.PRICE_ENTRY.value],
+                Exit.PRICE_EXIT.value: exit_info[Exit.PRICE_EXIT.value],
+                BBWP_ENTRY: entry_info[BBWP_ENTRY],
+                BBWP_EXIT: exit_info[BBWP_EXIT],
+                Exit.PNL.value: pnl(entry_info[Entry.POSITION.value], float(entry_info[Entry.PRICE_ENTRY.value]),
+                               float(exit_info[Exit.PRICE_EXIT.value])),
+                Exit.TRADE_DURATION.value: trade_duration(entry_info[Entry.TIME_IN.value], exit_info[Exit.TIME_OUT.value])
+            }
+        except ValueError:
+            logging.warning(f'{self.name} on {self.tf} and trading pair {self.pair} is unable to create final trade '
+                            f'metrics metrics returning empty final trade')
+            finished_trade = {
+                Entry.TIME_IN.value: "",
+                Exit.TIME_OUT.value: "",
+                Entry.POSITION.value: "",
+                Entry.PRICE_ENTRY.value: "",
+                Exit.PRICE_EXIT.value: "",
+                BBWP_ENTRY: "",
+                BBWP_EXIT: "",
+                Exit.PNL.value: "",
+                Exit.TRADE_DURATION.value: ""
+            }
 
         return finished_trade
 

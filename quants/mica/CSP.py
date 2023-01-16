@@ -1,3 +1,6 @@
+import logging
+
+import MyLogger
 from BotInterface import BotInterface
 import pandas as pd
 import pandas_ta as ta
@@ -6,6 +9,7 @@ from Globals import Entry, Exit, TIME_FRAME_TO_SEC, trade_duration, pnl
 
 PPVI_HIGH = "ppvi_high"
 PPVI_LOW = "ppvi_low"
+logger = logging.getLogger('root')
 
 
 class CSP(BotInterface):
@@ -29,8 +33,6 @@ class CSP(BotInterface):
         price = float(candle['Close'][0])
         ppvi_high_band = float(candle['PPVI_HIGH'][0])
         ppvi_low_band = float(candle['PPVI_LOW'][0])
-        # print(f"{self.name} is evaluating the below candle for the {self.pair} on the {self.tf} timeframe\n")
-        #       f"{candle.to_string()}\n\n")
 
         long_entry_signals = 0
         short_entry_signals = 0
@@ -138,7 +140,8 @@ class CSP(BotInterface):
                     Exit.TIME_OUT.value])
             }
         except ValueError:
-            print("Unable to create final trade metrics, returning empty final trade")
+            logging.warning(f'{self.name} on {self.tf} and trading pair {self.pair} is unable to create final trade'
+                            f'metrics metrics returning empty final trade')
             finished_trade = {
                 Entry.TIME_IN.value: "",
                 Exit.TIME_OUT.value: "",
