@@ -1,6 +1,9 @@
+import logging
 from abc import ABCMeta, abstractmethod
 from pandas import DataFrame
 from firebase_admin import db
+from Globals import LIVE_PNL, pnl, Entry, Exit
+logger = logging.getLogger('root')
 
 
 class BotInterface(metaclass=ABCMeta):
@@ -32,7 +35,7 @@ class BotInterface(metaclass=ABCMeta):
         :param entry_info: a json object that contains both the candle and strategy metrics for a found upon entry
         :return: Nothing, is a db management function
         """
-        print(f'{self.name} IS MAKING ENTRY ON {self.tf} for {self.pair} with the follow:\n{entry_info}\n')
+        logging.info(f'{self.name} IS MAKING ENTRY ON {self.tf} for {self.pair} with the following:\n{entry_info}\n')
         self.ref_entry.set(entry_info)
 
     def exit(self, exit_info):
@@ -44,10 +47,26 @@ class BotInterface(metaclass=ABCMeta):
         :return: Nothing, is a db management function
         """
         finished_trade = self.trade_history_build(exit_info)
-        print(f'{self.name} IS EXITING ON {self.tf} for {self.pair} with the following:\n{exit_info}\n')
+        logging.info(f'{self.name} IS EXITING ON {self.tf} for {self.pair} with the following:\n{exit_info}\n')
+
         self.ref_trade_history.push(finished_trade)
         # Remove entry from db
         self.ref_entry.set("null")
+
+    def trade_update(self, current_price):
+        '''
+        :description: Currently updates the current trades pnl after the most recent candle closure. If an exit isn't made
+        :param entry_info:
+        :return: None
+        '''
+        try:
+            entry = self.ref_entry.get()
+            entry[LIVE_PNL] = pnl(entry[Entry.POSITION.value], entry[Entry.PRICE_ENTRY.value], current_price)
+            self.ref_entry.update(entry)
+        except ConnectionError:
+            logging.error(f'{self.name} with timeframe {self.tf} and pair {self.pair}'
+                          f'through had BotInterface: THERE HAS BEEN AN ISSUE CONNECTING OR RECEIVING DATA FOR TRADE'
+                          f'UPDATE\nLIVE PNL FOR THIS BOT WILL REMAIN AS IS')
 
     @abstractmethod
     def entry_exit(self):
@@ -66,7 +85,7 @@ class BotInterface(metaclass=ABCMeta):
         :return: nothing
         """
         self.data = subscribee.data
-        print(f"{self.name} looking for entry on {self.tf} for the {self.pair} pair")
+        logging.info(f'{self.name} looking for entry on {self.tf} for the {self.pair} pair')
         self.entry_exit()
 
     @abstractmethod

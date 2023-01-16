@@ -1,20 +1,15 @@
+import logging
+
+import MyLogger
 from BotInterface import BotInterface
 import pandas as pd
-from firebase_admin import db
 import pandas_ta as ta
 from datetime import timedelta
-from Globals import TIME_FRAME_TO_SEC, trade_duration, pnl
+from Globals import Entry, Exit, TIME_FRAME_TO_SEC, trade_duration, pnl
 
-TIME_IN = "time_in"
-TIME_OUT = "time_out"
-POSITION = "position"
-PRICE_ENTRY = "price_entry"
-PRICE_EXIT = "price_exit"
 PPVI_HIGH = "ppvi_high"
 PPVI_LOW = "ppvi_low"
-CLOSE = "Close"
-PNL = "pnl"
-TRADE_DURATION = "trade_duration"
+logger = logging.getLogger('root')
 
 
 class CSP(BotInterface):
@@ -38,8 +33,6 @@ class CSP(BotInterface):
         price = float(candle['Close'][0])
         ppvi_high_band = float(candle['PPVI_HIGH'][0])
         ppvi_low_band = float(candle['PPVI_LOW'][0])
-        # print(f"{self.name} is evaluating the below candle for the {self.pair} on the {self.tf} timeframe\n"
-        #       f"{candle.to_string()}\n\n")
 
         long_entry_signals = 0
         short_entry_signals = 0
@@ -93,11 +86,9 @@ class CSP(BotInterface):
             self.in_trade = 1
             return
 
-
-
         # Long Entry and Short Check Exit
         if self.long_hold == 0 and long_entry_signals >= 1:
-            entry_info[POSITION] = "long"
+            entry_info[Entry.POSITION.value] = "long"
             if self.short_hold == 1:
                 self.exit(exit_info)
                 self.short_hold = 0
@@ -112,7 +103,7 @@ class CSP(BotInterface):
 
         # Short Entry and Long Exit Check
         if self.short_hold == 0 and short_entry_signals >= 1:
-            entry_info[POSITION] = "short"
+            entry_info[Entry.POSITION.value] = "short"
             if self.long_hold == 1:
                 self.exit(exit_info)
                 self.long_hold = 0
@@ -125,35 +116,42 @@ class CSP(BotInterface):
             self.short_hold = 0
             self.last_purchase_price = 0
 
+        #Call trade_update (only has live_pnl for now) if no exit is made and in trade
+        if self.long_hold == 1 or self.short_hold == 1:
+            self.trade_update(price)
+
     def trade_history_build(self, exit_info):
-        #First get entry info
+        # First get entry info
         entry_info = self.ref_entry.get()
 
         # Merge the entry and exit info into one dict for the trade_history node in the db
         try:
             finished_trade = {
-                TIME_IN: entry_info[TIME_IN],
-                TIME_OUT: exit_info[TIME_OUT],
-                POSITION: entry_info[POSITION],
-                PRICE_ENTRY: entry_info[PRICE_ENTRY],
-                PRICE_EXIT: exit_info[PRICE_EXIT],
+                Entry.TIME_IN.value: entry_info[Entry.TIME_IN.value],
+                Exit.TIME_OUT.value: exit_info[Exit.TIME_OUT.value],
+                Entry.POSITION.value: entry_info[Entry.POSITION.value],
+                Entry.PRICE_ENTRY.value: entry_info[Entry.PRICE_ENTRY.value],
+                Exit.PRICE_EXIT.value: exit_info[Exit.PRICE_EXIT.value],
                 PPVI_LOW: exit_info[PPVI_HIGH],
                 PPVI_HIGH: exit_info[PPVI_LOW],
-                PNL: pnl(entry_info[POSITION], float(entry_info[PRICE_ENTRY]), float(exit_info[PRICE_EXIT])),
-                TRADE_DURATION: trade_duration(entry_info[TIME_IN], exit_info[TIME_OUT])
+                Exit.PNL.value: pnl(entry_info[Entry.POSITION.value], float(entry_info[Entry.PRICE_ENTRY.value]),
+                                    float(exit_info[Exit.PRICE_EXIT.value])),
+                Exit.TRADE_DURATION.value: trade_duration(entry_info[Entry.TIME_IN.value], exit_info[
+                    Exit.TIME_OUT.value])
             }
         except ValueError:
-            print("Unable to create final trade metrics, returning empty final trade")
+            logging.warning(f'{self.name} on {self.tf} and trading pair {self.pair} is unable to create final trade'
+                            f'metrics metrics returning empty final trade')
             finished_trade = {
-                TIME_IN: "",
-                TIME_OUT: "",
-                POSITION: "",
-                PRICE_ENTRY: "",
-                PRICE_EXIT: "",
+                Entry.TIME_IN.value: "",
+                Exit.TIME_OUT.value: "",
+                Entry.POSITION.value: "",
+                Entry.PRICE_ENTRY.value: "",
+                Exit.PRICE_EXIT.value: "",
                 PPVI_LOW: "",
                 PPVI_HIGH: "",
-                PNL: "",
-                TRADE_DURATION: ""
+                Exit.PNL.value: "",
+                Exit.TRADE_DURATION.value: ""
             }
 
         return finished_trade

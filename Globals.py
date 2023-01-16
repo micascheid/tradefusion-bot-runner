@@ -1,9 +1,16 @@
+import logging
 import os
 from dotenv import load_dotenv
 from datetime import datetime
+from enum import Enum
+import time
+import pytz
+from datetime import timedelta
+
+logger = logging.getLogger('root')
 load_dotenv()
 DB_URL = os.getenv('db_url')
-
+LIVE_PNL = "live_pnl"
 TIME_FRAME_TO_SEC = {
     "5m": 300,
     "30m": 1800,
@@ -20,6 +27,21 @@ INTERVAL_UNITS = {
 }
 
 
+class Entry(Enum):
+    CLOSE = "Close"
+    LIVE_PNL = "live_pnl"
+    POSITION = "position"
+    PRICE_ENTRY = "price_entry"
+    TIME_IN = "time_in"
+
+
+class Exit(Enum):
+    PNL = "pnl"
+    PRICE_EXIT = "price_exit"
+    TIME_OUT = "time_out"
+    TRADE_DURATION = "trade_duration"
+
+
 def trade_duration(entry_time, exit_time):
     try:
         dt_entry = datetime.strptime(entry_time, '%Y-%m-%d %H:%M:%S%z')
@@ -31,9 +53,9 @@ def trade_duration(entry_time, exit_time):
         hours, remainder = divmod(remainder, 3600)
         minutes, seconds = divmod(remainder, 60)
 
-        return f"{days}:{hours}:{minutes} {seconds}"
+        return '{:02}:{:02}:{:02}'.format(int(days), int(hours), int(minutes))
     except ValueError:
-        print("Unable to get trade duration, will return emty string")
+        logging.error("Unable to get trade duration, will return empty string")
         return ""
 
 

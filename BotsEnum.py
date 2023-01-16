@@ -3,6 +3,7 @@ from quants.mica.KrownCross import KrownCross
 from quants.mica.CSP import CSP
 
 
+
 class BotsEnum(Enum):
     KROWNCROSS = KrownCross
     CSP = CSP
