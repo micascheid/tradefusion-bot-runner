@@ -1,10 +1,11 @@
+import sys
+
 from firebase_admin import credentials, db, firestore
 from Globals import DB_URL
 import firebase_admin
 import json
 import os
 
-os.environ['FIRESTORE_EMULATOR_HOST'] = 'localhost:8080'
 
 
 def db_initializer():
@@ -15,7 +16,7 @@ def db_initializer():
 def db_init_data_check() -> None:
     #Final db structure is not conclusive and will be worked on further after discussion with usage of mvp by quants.
     # For now, I will hard code it in as seen below
-    if firestore.client().collection(u'active_bots').get().to_dict() is not None:
+    if len(firestore.client().collection(u'active_bots').get()) > 0 :
         return
     quant1 = {
         "bots": {
