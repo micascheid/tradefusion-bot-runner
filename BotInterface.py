@@ -21,8 +21,6 @@ class BotInterface(metaclass=ABCMeta):
         self.ref_trade_history = firestore.client().collection(u'trade_history/{}/{}'.format(self.name,
                                                                                              self.tf+self.pair))
         self.entry_name = self.tf+self.pair
-        if self.ref_entry.get().to_dict() is None:
-            firestore.client().collection(u'entry').document(self.name).set('')
 
 
     def get_tf(self):
@@ -40,7 +38,8 @@ class BotInterface(metaclass=ABCMeta):
         :return: Nothing, is a db management function
         """
         logging.info(f'{self.name} IS MAKING ENTRY ON {self.tf} for {self.pair} with the following:\n{entry_info}\n')
-
+        if self.ref_entry.get().to_dict() is None:
+            firestore.client().collection(u'entry').document(self.name).set('')
         self.ref_entry.update({self.entry_name: entry_info})
 
 
