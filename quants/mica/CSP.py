@@ -122,7 +122,7 @@ class CSP(BotInterface):
 
     def trade_history_build(self, exit_info):
         # First get entry info
-        entry_info = self.ref_entry.get()
+        entry_info = self.ref_entry.get().to_dict()[self.entry_name]
 
         # Merge the entry and exit info into one dict for the trade_history node in the db
         try:

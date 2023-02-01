@@ -1,8 +1,10 @@
 from datetime import datetime
 import numpy
+import sys
 import numpy as np
 import pytz
 import requests
+import os
 from pandas import DataFrame
 from Globals import TIME_FRAME_TO_SEC, INTERVAL_UNITS
 
@@ -10,7 +12,7 @@ from KlineDataMonitor import KlineDataMonitor
 import time
 from DBPaths import DBPaths
 import firebase_admin
-from firebase_admin import credentials, db
+from firebase_admin import credentials, db, firestore
 import logging
 logging.getLogger('apscheduler').setLevel(logging.WARNING)
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -21,13 +23,21 @@ from yaspin import yaspin
 # import logging
 
 
-REF = DBStuffForNow.db_initializer()
-
 def db_get_active_bots() -> dict:
-    return REF.child(DBPaths.ACTIVEBOTS.value).get()
+    active_bots_dict = {}
+    active_bots = firestore.client().collection(DBPaths.ACTIVEBOTS.value).get()
+    for act_bot in active_bots:
+        active_bots_dict[act_bot.id] = act_bot.to_dict()
+    return active_bots_dict
+
 
 def db_get_timeframes_pairs() -> dict:
-    return REF.child(DBPaths.TIMEFRAMES_PAIRS.value).get()
+    timeframe_pairs_dict = {}
+    timeframe_pairs = firestore.client().collection(DBPaths.TIMEFRAMES_PAIRS.value).get()
+    for tf_pair in timeframe_pairs:
+        timeframe_pairs_dict[tf_pair.id] = tf_pair.to_dict()
+    return timeframe_pairs_dict
+
 
 def create_bot_list(live_bots) -> list:
     bot_obj_list = []
@@ -42,7 +52,7 @@ def kline_data_monitor_manager() -> {KlineDataMonitor}:
     active_tfs_pairs = db_get_timeframes_pairs()
     new_dict = {}
     for k in active_tfs_pairs.keys():
-        for pair in active_tfs_pairs[k]:
+        for pair in active_tfs_pairs[k]['pairs']:
             new_dict[k+pair] = KlineDataMonitor(name=k+pair, tf=k, pair=pair)
     return new_dict
 
@@ -76,6 +86,21 @@ def calc_job_times(timeframe) -> {}:
 #         return True
 
 def Main():
+    # Initial handling of DB at script launch
+    if len(sys.argv) == 1:
+        emulator = input("Please confirm you would like to run data to local emulator on port 8080[y/n]")
+        if emulator == "n":
+            exit(0)
+        os.environ['FIRESTORE_EMULATOR_HOST'] = 'localhost:8080'
+    else:
+        if "--prod" in sys.argv:
+            prod = input("Please confirm you would like to run data to production[y/n]")
+            if prod == "n":
+                exit(0)
+    DBStuffForNow.db_initializer()
+    DBStuffForNow.db_init_data_check()
+
+
     # Startup the ole logger
     logging.basicConfig(filename="./logs/log.txt", level=logging.INFO,
                         format='%(asctime)s - %(levelname)s - %(module)s - %(message)s')
