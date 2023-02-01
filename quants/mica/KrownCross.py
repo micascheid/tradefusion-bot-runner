@@ -142,20 +142,10 @@ class KrownCross(BotInterface):
         if self.long_hold == 1 or self.short_hold == 1:
             self.trade_update(price)
 
-    def trade_update(self, current_price):
-        try:
-            entry = self.ref_entry.get()
-            entry[Entry.LIVE_PNL.value] = pnl(entry[Entry.POSITION.value], entry[Entry.PRICE_ENTRY.value],
-                                              current_price)
-            self.ref_entry.update(entry)
-        except ConnectionError:
-            msg = f'{self.tf}: BotInterface ERROR: THERE HAS BEEN AN ISSUE CONNECTING OR RECIEVING DATA FOR TRADE ' \
-                  f'UPDATE\nLIVE PNL FOR THIS BOT WILL REMAIN AS IS'
-            logging.error(msg)
 
     def trade_history_build(self, exit_info):
         #First get entry info
-        entry_info = self.ref_entry.get()
+        entry_info = self.ref_entry.get().to_dict()[self.entry_name]
 
         # Merge the entry and exit info into one dict for" the trade_history node in the db
         try:

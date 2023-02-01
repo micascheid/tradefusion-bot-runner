@@ -1,10 +1,9 @@
 import logging
 from abc import ABCMeta, abstractmethod
 from pandas import DataFrame
-from firebase_admin import db
+from firebase_admin import db, firestore
 from Globals import LIVE_PNL, pnl, Entry, Exit
 logger = logging.getLogger('root')
-
 
 class BotInterface(metaclass=ABCMeta):
     bots_created = {}
@@ -18,8 +17,13 @@ class BotInterface(metaclass=ABCMeta):
         BotInterface.bots_created[name, tf + pair] = self
         self.long_hold = 0
         self.short_hold = 0
-        self.ref_entry = db.reference(f'entry/{self.name}/{self.tf+self.pair}')
-        self.ref_trade_history = db.reference(f'trade_history/{self.name}/{self.tf+self.pair}/')
+        self.ref_entry = firestore.client().document(u'entry/{}'.format(self.name))
+        self.ref_trade_history = firestore.client().collection(u'trade_history/{}/{}'.format(self.name,
+                                                                                             self.tf+self.pair))
+        self.entry_name = self.tf+self.pair
+        if self.ref_entry.get().to_dict() is None:
+            firestore.client().collection(u'entry').document(self.name).set('')
+
 
     def get_tf(self):
         return self.tf
@@ -36,7 +40,9 @@ class BotInterface(metaclass=ABCMeta):
         :return: Nothing, is a db management function
         """
         logging.info(f'{self.name} IS MAKING ENTRY ON {self.tf} for {self.pair} with the following:\n{entry_info}\n')
-        self.ref_entry.set(entry_info)
+
+        self.ref_entry.update({self.entry_name: entry_info})
+
 
     def exit(self, exit_info):
         """
@@ -49,9 +55,10 @@ class BotInterface(metaclass=ABCMeta):
         finished_trade = self.trade_history_build(exit_info)
         logging.info(f'{self.name} IS EXITING ON {self.tf} for {self.pair} with the following:\n{exit_info}\n')
 
-        self.ref_trade_history.push(finished_trade)
-        # Remove entry from db
-        self.ref_entry.set("null")
+        self.ref_trade_history.add(finished_trade)
+
+        # Empty entry data from db
+        self.ref_entry.update({self.entry_name: ''})
 
     def trade_update(self, current_price):
         '''
@@ -60,9 +67,9 @@ class BotInterface(metaclass=ABCMeta):
         :return: None
         '''
         try:
-            entry = self.ref_entry.get()
+            entry = self.ref_entry.get().to_dict()[self.entry_name]
             entry[LIVE_PNL] = pnl(entry[Entry.POSITION.value], entry[Entry.PRICE_ENTRY.value], current_price)
-            self.ref_entry.update(entry)
+            self.ref_entry.update({self.entry_name: entry})
         except ConnectionError:
             logging.error(f'{self.name} with timeframe {self.tf} and pair {self.pair}'
                           f'through had BotInterface: THERE HAS BEEN AN ISSUE CONNECTING OR RECEIVING DATA FOR TRADE'
