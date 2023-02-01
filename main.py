@@ -86,6 +86,9 @@ def calc_job_times(timeframe) -> {}:
 #         return True
 
 def Main():
+    # Spawn db data if empty
+    DBStuffForNow.db_init_data_check()
+
     # Startup the ole logger
     logging.basicConfig(filename="./logs/log.txt", level=logging.INFO,
                         format='%(asctime)s - %(levelname)s - %(module)s - %(message)s')
