@@ -24,7 +24,29 @@ BBWP_ENTRY = "bbwp_entry"
 BBWP_EXIT = "bbwp_exit"
 CLOSE = "Close"
 BBWP = "BBWP"
+EMA_F_STR = "ema_f"
+EMA_M_STR = "ema_m"
+EMA_S_STR = "ema_s"
 logger = logging.getLogger('root')
+
+# IND_RULES_LONG = {
+#     "entry": {
+#         EMA_F_STR: "Must be above ema_m and ema_s"
+#         EMA_M_STR: ""
+#     },
+#     "exit": {
+#
+#     }
+# }
+
+IND_RULES_SHORT = {
+    "entry": {
+
+    },
+    "exit": {
+
+    }
+}
 
 
 
@@ -34,6 +56,25 @@ class KrownCross(BotInterface):
         super().__init__(name, tf, pair)
         self.bbwp_hit_counter = 0
         self.trade_force_count = 0
+        self.LIVE_TRADE_OBJECT = {self.entry_name: {"live_trade":
+                                                        {Entry.IN_TRADE.value: "false",
+                                                         Entry.LIVE_PNL.value: "",
+                                                         Entry.TRADE_DURATION.value: "",
+                                                         Entry.POSITION.value: "",
+                                                         BBWP_ENTRY: "",
+                                                         EMA_F_STR: "",
+                                                         EMA_M_STR: "",
+                                                         EMA_S_STR: "",
+                                                         Entry.PRICE_ENTRY.value: "",
+                                                         Entry.TIME_IN.value: ""
+                                                         },
+                                                    "current_ind":
+                                                        {BBWP: "",
+                                                         Entry.LAST_CLOSING_PRICE.value: ""
+                                                         }
+                                                    }
+                                  }
+
 
     def entry_exit(self):
 
@@ -92,11 +133,21 @@ class KrownCross(BotInterface):
         if self.short_hold == 1:
             is_stop_loss = self.short_hold == 1 and ema_f > ema_m or price >= ema_s
 
-        entry_info = {
+        current_ind = {
+            "bbwp": bbwp,
+            Entry.LAST_CLOSING_PRICE.value: price
+        }
+
+        live_entry_info = {
+            Entry.IN_TRADE.value: "",
             Entry.TIME_IN.value: timestamp,
+            Entry.TRADE_DURATION.value: "",
             Entry.POSITION.value: "",
             Entry.PRICE_ENTRY.value: price,
             BBWP_ENTRY: bbwp,
+            EMA_F_STR: ema_f,
+            EMA_M_STR: ema_m,
+            EMA_S_STR: ema_s,
             Entry.LIVE_PNL.value: ""
         }
 
@@ -108,11 +159,12 @@ class KrownCross(BotInterface):
 
         # Long entry
         if self.long_hold == 0 and long_entry_signals == 3:
-            entry_info[Entry.POSITION.value] = "long"
+            live_entry_info[Entry.POSITION.value] = "long"
+            live_entry_info[Entry.IN_TRADE.value] = "true"
             if self.short_hold == 1:
                 self.exit(exit_info)
                 self.short_hold = 0
-            self.entry(entry_info)
+            self.entry(live_entry_info)
             self.last_purchase_price = price
             self.long_hold = 1
 
@@ -124,11 +176,12 @@ class KrownCross(BotInterface):
             self.bbwp_hit_counter = 0
 
         if self.short_hold == 0 and short_entry_signals == 3:
-            entry_info[Entry.POSITION.value] = "short"
+            live_entry_info[Entry.POSITION.value] = "short"
+            live_entry_info[Entry.IN_TRADE.value] = "true"
             if self.long_hold == 1:
                 self.exit(exit_info)
                 self.long_hold = 0
-            self.entry(entry_info)
+            self.entry(live_entry_info)
             self.last_purchase_price = price
             self.short_hold = 1
         # Short exit
@@ -141,6 +194,9 @@ class KrownCross(BotInterface):
         #Call trade_update (only has live_pnl for now) if no exit is made and in trade
         if self.long_hold == 1 or self.short_hold == 1:
             self.trade_update(price)
+
+        #Regardless of trade all entry_names (Tf+pair) need to get current indicators updated
+        self.ind_update(current_ind)
 
 
     def trade_history_build(self, exit_info):

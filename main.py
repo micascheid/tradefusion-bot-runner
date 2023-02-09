@@ -1,11 +1,14 @@
 from datetime import datetime
 import numpy
+import platform
 import sys
 import numpy as np
 import pytz
 import requests
 import os
 from pandas import DataFrame
+
+import BotsEnum
 from Globals import TIME_FRAME_TO_SEC, INTERVAL_UNITS
 
 from KlineDataMonitor import KlineDataMonitor
@@ -19,6 +22,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from BotFactory import BotFactory
 from BotObj import BotObj
 import DBStuffForNow
+from quants.mica import CSP, KrownCross
 from yaspin import yaspin
 # import logging
 
@@ -65,25 +69,26 @@ def calc_job_times(timeframe) -> {}:
     interval_val = INTERVAL_UNITS[tf_unit]
     t_now = time.time()
     tz = pytz.timezone('UTC')
-    next_run_time = datetime.fromtimestamp((t_now - (t_now % timeframe_sec)) + timeframe_sec, tz=tz)
+
+    if platform.node() == 'Micas-MacBook-Pro.local':
+        next_run_time = datetime.fromtimestamp((t_now - (t_now % timeframe_sec)) + timeframe_sec, tz=tz)
+    else:
+        next_run_time = datetime.fromtimestamp((t_now - (t_now % timeframe_sec)) + timeframe_sec+1, tz=tz)
+
     return {interval_val: t_amount, 'next_run_time': next_run_time}
 
 
-# class ContextFilter(logging.Filter):
-#     """
-#     This is a filter which injects contextual information into the log.
-#
-#     Rather than use actual contextual information, we just use random
-#     data in this demo.
-#     """
-#
-#     JOBS = ['Added Job', '']
-#
-#     def filter(self, record):
-#
-#         record.ip = choice(ContextFilter.IPS)
-#         record.user = choice(ContextFilter.USERS)
-#         return True
+def bot_db_config(bots) -> None:
+    # Each bot needs to go out and create the following document: entry/<bot_name>/<tf+pair>
+    for key in BotsEnum.bots_enum_dict.keys():
+        doc_query = firestore.client().collection('entry').document(key).get()
+        if doc_query.to_dict() is None:
+            firestore.client().collection('entry').document(key).set('')
+
+    for bot in bots:
+        # print(f'Botname: {bot.name}, TRADE_OBJ: {bot.LIVE_TRADE_OBJECT}')
+        firestore.client().collection('entry').document(f'{bot.name}').update(bot.LIVE_TRADE_OBJECT)
+
 
 def Main():
     # Startup the ole logger
@@ -124,6 +129,9 @@ def Main():
 
     # Instantiate all bots
     my_new_bots = bot_factory.create()
+
+    # Configure db according to bot creation
+    bot_db_config(my_new_bots)
 
     # Create the data monitors per time frame
     data_monitors = kline_data_monitor_manager()

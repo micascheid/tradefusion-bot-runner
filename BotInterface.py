@@ -40,8 +40,7 @@ class BotInterface(metaclass=ABCMeta):
         logging.info(f'{self.name} IS MAKING ENTRY ON {self.tf} for {self.pair} with the following:\n{entry_info}\n')
         if self.ref_entry.get().to_dict() is None:
             firestore.client().collection(u'entry').document(self.name).set('')
-        self.ref_entry.update({self.entry_name: entry_info})
-
+        self.ref_entry.update({f'{self.entry_name}.live_trade': entry_info})
 
     def exit(self, exit_info):
         """
@@ -57,7 +56,22 @@ class BotInterface(metaclass=ABCMeta):
         self.ref_trade_history.add(finished_trade)
 
         # Empty entry data from db
-        self.ref_entry.update({self.entry_name: ''})
+        # NOTE: live trade info will be left from last trade, the "in_trade" key identifies in trade or not
+        self.ref_entry.update({f'{self.entry_name}.live_trade.{Entry.IN_TRADE.value}': "false"})
+
+    def ind_update(self, current_ind):
+        '''
+        :description: updates the "current_ind" object within the entry_name object
+        :param current_ind:
+        :return:
+        '''
+        try:
+            self.ref_entry.update({f'{self.entry_name}.current_ind': current_ind})
+
+        except ConnectionError:
+            logging.error(f'{self.name} with timeframe {self.tf} and pair {self.pair}'
+                          f'through had BotInterface: THERE HAS BEEN AN ISSUE CONNECTING OR RECEIVING DATA FOR TRADE'
+                          f'UPDATE\nLIVE PNL FOR THIS BOT WILL REMAIN AS IS')
 
     def trade_update(self, current_price):
         '''
@@ -66,9 +80,9 @@ class BotInterface(metaclass=ABCMeta):
         :return: None
         '''
         try:
-            entry = self.ref_entry.get().to_dict()[self.entry_name]
+            entry = self.ref_entry.get().to_dict()[self.entry_name]['live_trade']
             entry[LIVE_PNL] = pnl(entry[Entry.POSITION.value], entry[Entry.PRICE_ENTRY.value], current_price)
-            self.ref_entry.update({self.entry_name: entry})
+            self.ref_entry.update({f'{self.entry_name}.live_trade': entry})
         except ConnectionError:
             logging.error(f'{self.name} with timeframe {self.tf} and pair {self.pair}'
                           f'through had BotInterface: THERE HAS BEEN AN ISSUE CONNECTING OR RECEIVING DATA FOR TRADE'

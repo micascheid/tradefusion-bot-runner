@@ -28,18 +28,25 @@ INTERVAL_UNITS = {
 
 
 class Entry(Enum):
+    LAST_CLOSING_PRICE = 'last_closing_price'
+    IN_TRADE = "in_trade"
     CLOSE = "Close"
     LIVE_PNL = "live_pnl"
     POSITION = "position"
     PRICE_ENTRY = "price_entry"
     TIME_IN = "time_in"
+    TRADE_DURATION = "trade_duration"
 
 
 class Exit(Enum):
     PNL = "pnl"
     PRICE_EXIT = "price_exit"
     TIME_OUT = "time_out"
+
+
+class Current(Enum):
     TRADE_DURATION = "trade_duration"
+    LAST_UPDATE_TIME = "last_update_time"
 
 
 def trade_duration(entry_time, exit_time):
