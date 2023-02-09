@@ -8,7 +8,7 @@ import pandas as pd
 from datetime import timedelta
 from Globals import TIME_FRAME_TO_SEC, trade_duration, pnl
 from datetime import datetime
-from Globals import Entry, Exit
+from Globals import Entry, Exit, Current
 
 EMA_F = 9 #f = fast
 EMA_M = 21 #m = medium
@@ -215,7 +215,7 @@ class KrownCross(BotInterface):
                 BBWP_EXIT: exit_info[BBWP_EXIT],
                 Exit.PNL.value: pnl(entry_info[Entry.POSITION.value], float(entry_info[Entry.PRICE_ENTRY.value]),
                                float(exit_info[Exit.PRICE_EXIT.value])),
-                Exit.TRADE_DURATION.value: trade_duration(entry_info[Entry.TIME_IN.value], exit_info[Exit.TIME_OUT.value])
+                Current.TRADE_DURATION.value: trade_duration(entry_info[Entry.TIME_IN.value], exit_info[Exit.TIME_OUT.value])
             }
         except ValueError:
             logging.warning(f'{self.name} on {self.tf} and trading pair {self.pair} is unable to create final trade '
@@ -229,7 +229,7 @@ class KrownCross(BotInterface):
                 BBWP_ENTRY: "",
                 BBWP_EXIT: "",
                 Exit.PNL.value: "",
-                Exit.TRADE_DURATION.value: ""
+                Current.TRADE_DURATION.value: ""
             }
 
         return finished_trade

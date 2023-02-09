@@ -5,7 +5,7 @@ from BotInterface import BotInterface
 import pandas as pd
 import pandas_ta as ta
 from datetime import timedelta
-from Globals import Entry, Exit, TIME_FRAME_TO_SEC, trade_duration, pnl
+from Globals import Entry, Exit, TIME_FRAME_TO_SEC, trade_duration, pnl, Current
 
 PPVI_HIGH = "ppvi_high"
 PPVI_LOW = "ppvi_low"
@@ -167,7 +167,7 @@ class CSP(BotInterface):
                 PPVI_HIGH: exit_info[PPVI_LOW],
                 Exit.PNL.value: pnl(entry_info[Entry.POSITION.value], float(entry_info[Entry.PRICE_ENTRY.value]),
                                     float(exit_info[Exit.PRICE_EXIT.value])),
-                Exit.TRADE_DURATION.value: trade_duration(entry_info[Entry.TIME_IN.value], exit_info[
+                Current.TRADE_DURATION.value: trade_duration(entry_info[Entry.TIME_IN.value], exit_info[
                     Exit.TIME_OUT.value])
             }
         except ValueError:
@@ -182,7 +182,7 @@ class CSP(BotInterface):
                 PPVI_LOW: "",
                 PPVI_HIGH: "",
                 Exit.PNL.value: "",
-                Exit.TRADE_DURATION.value: ""
+                Current.TRADE_DURATION.value: ""
             }
 
         return finished_trade
