@@ -48,6 +48,12 @@ class Current(Enum):
     TRADE_DURATION = "trade_duration"
     LAST_UPDATE_TIME = "last_update_time"
 
+class LTO(Enum):
+    LIVE_TRADE = "live_trade"
+    CURRENT_IND_VAL = "current_ind_val"
+    CURRENT_IND_LONG = "current_ind_long"
+    CURRENT_IND_SHORT = "current_ind_short"
+
 
 def trade_duration(entry_time, exit_time):
     try:

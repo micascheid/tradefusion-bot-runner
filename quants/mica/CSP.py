@@ -5,7 +5,7 @@ from BotInterface import BotInterface
 import pandas as pd
 import pandas_ta as ta
 from datetime import timedelta
-from Globals import Entry, Exit, TIME_FRAME_TO_SEC, trade_duration, pnl, Current
+from Globals import Entry, Exit, TIME_FRAME_TO_SEC, trade_duration, pnl, Current, LTO
 
 PPVI_HIGH = "ppvi_high"
 PPVI_LOW = "ppvi_low"
@@ -20,7 +20,7 @@ class CSP(BotInterface):
         self.force_entry = False
         self.force_exit = False
         self.in_trade = 0
-        self.LIVE_TRADE_OBJECT = {self.entry_name: {"live_trade":
+        self.LIVE_TRADE_OBJECT = {self.entry_name: {LTO.LIVE_TRADE.value:
                                                         {Entry.IN_TRADE.value: "false",
                                                          Entry.LIVE_PNL.value: "",
                                                          Entry.TRADE_DURATION.value: "",
@@ -30,11 +30,21 @@ class CSP(BotInterface):
                                                          Entry.PRICE_ENTRY.value: "",
                                                          Entry.TIME_IN.value: ""
                                                          },
-                                                    "current_ind":
+                                                    LTO.CURRENT_IND_VAL.value:
                                                         {PPVI_HIGH: "",
                                                          PPVI_LOW: "",
                                                          Entry.LAST_CLOSING_PRICE.value: ""
-                                                         }
+                                                         },
+                                                    LTO.CURRENT_IND_LONG:
+                                                        {
+                                                            PPVI_HIGH: "false",
+                                                            PPVI_LOW: "false",
+                                                        },
+                                                    LTO.CURRENT_IND_SHORT:
+                                                        {
+                                                            PPVI_HIGH: "false",
+                                                            PPVI_LOW: "false",
+                                                        }
                                                     }
                                   }
 
@@ -153,7 +163,7 @@ class CSP(BotInterface):
 
     def trade_history_build(self, exit_info):
         # First get entry info
-        entry_info = self.ref_entry.get().to_dict()[self.entry_name]
+        entry_info = self.ref_entry.get().to_dict()[self.entry_name][self.tf+self.pair]
 
         # Merge the entry and exit info into one dict for the trade_history node in the db
         try:

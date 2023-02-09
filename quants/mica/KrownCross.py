@@ -8,7 +8,7 @@ import pandas as pd
 from datetime import timedelta
 from Globals import TIME_FRAME_TO_SEC, trade_duration, pnl
 from datetime import datetime
-from Globals import Entry, Exit, Current
+from Globals import Entry, Exit, Current, LTO
 
 EMA_F = 9 #f = fast
 EMA_M = 21 #m = medium
@@ -56,7 +56,7 @@ class KrownCross(BotInterface):
         super().__init__(name, tf, pair)
         self.bbwp_hit_counter = 0
         self.trade_force_count = 0
-        self.LIVE_TRADE_OBJECT = {self.entry_name: {"live_trade":
+        self.LIVE_TRADE_OBJECT = {self.entry_name: {LTO.LIVE_TRADE.value:
                                                         {Entry.IN_TRADE.value: "false",
                                                          Entry.LIVE_PNL.value: "",
                                                          Entry.TRADE_DURATION.value: "",
@@ -68,10 +68,22 @@ class KrownCross(BotInterface):
                                                          Entry.PRICE_ENTRY.value: "",
                                                          Entry.TIME_IN.value: ""
                                                          },
-                                                    "current_ind":
+                                                    LTO.CURRENT_IND_VAL.value:
                                                         {BBWP: "",
                                                          Entry.LAST_CLOSING_PRICE.value: ""
-                                                         }
+                                                         },
+                                                    LTO.CURRENT_IND_LONG.value:
+                                                        {
+                                                            EMA_F_STR: "false",
+                                                            EMA_M_STR: "false",
+                                                            EMA_S_STR: "false"
+                                                        },
+                                                    LTO.CURRENT_IND_SHORT.value:
+                                                        {
+                                                            EMA_F_STR: "false",
+                                                            EMA_M_STR: "false",
+                                                            EMA_S_STR: "false"
+                                                        }
                                                     }
                                   }
 
@@ -201,7 +213,7 @@ class KrownCross(BotInterface):
 
     def trade_history_build(self, exit_info):
         #First get entry info
-        entry_info = self.ref_entry.get().to_dict()[self.entry_name]
+        entry_info = self.ref_entry.get().to_dict()[self.entry_name][self.tf+self.pair]
 
         # Merge the entry and exit info into one dict for" the trade_history node in the db
         try:
