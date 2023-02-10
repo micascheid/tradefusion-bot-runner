@@ -27,31 +27,89 @@ BBWP = "BBWP"
 EMA_F_STR = "ema_f"
 EMA_M_STR = "ema_m"
 EMA_S_STR = "ema_s"
+EMA_M_SEP = "ema_m_sep"
 logger = logging.getLogger('root')
 
-# IND_RULES_LONG = {
-#     "entry": {
-#         EMA_F_STR: "Must be above ema_m and ema_s"
-#         EMA_M_STR: ""
-#     },
-#     "exit": {
-#
-#     }
-# }
 
-IND_RULES_SHORT = {
-    "entry": {
+def current_ind_eval(ema_f, ema_m, ema_s, ema_m_s, bbwp):
+    bbwp_b = "false"
+    ema_sep_b = "false"
 
-    },
-    "exit": {
+    # long bools
+    ema_f_l_b = "false"
+    ema_m_l_b = "false"
+    ema_s_l_b = "false"
 
+    # short bools
+    ema_f_s_b = "false"
+    ema_m_s_b = "false"
+    ema_s_s_b = "false"
+
+    if bbwp <= bbwp_entry_signal:
+        bbwp_b = "true"
+
+    if ema_m_s <= separation:
+        ema_sep_b = "true"
+
+    # case 1:
+    if ema_f > ema_m > ema_s:
+        # long
+        ema_f_l_b = "true"
+        ema_m_l_b = "true"
+        ema_s_l_b = "true"
+        # short
+    # case 2:
+    if ema_m > ema_f > ema_s:
+        # long
+        ema_m_l_b = "true"
+        ema_s_l_b = "true"
+        # short
+    # case 3:
+    if ema_m > ema_s > ema_f:
+        # long
+        ema_m_l_b = "true"
+        # short
+        ema_f_s_b = "true"
+    # case 4:
+    if ema_s > ema_m > ema_f:
+        # long
+        # short
+        ema_f_s_b = "true"
+        ema_m_s_b = "true"
+        ema_s_s_b = "true"
+    # case 5:
+    if ema_f > ema_s > ema_m:
+        # long
+        ema_f_l_b = "true"
+        # short
+        ema_m_s_b = "true"
+
+    # case 6
+    if ema_s > ema_f > ema_m:
+        # long
+        # short
+        ema_m_s_b = "true"
+        ema_s_s_b = "true"
+
+    current_ind_long = {
+        EMA_F_STR: ema_f_l_b,
+        EMA_M_STR: ema_m_l_b,
+        EMA_S_STR: ema_s_l_b,
+        EMA_M_SEP: ema_sep_b,
+        BBWP: bbwp_b
     }
-}
+    current_ind_short = {
+        EMA_F_STR: ema_f_s_b,
+        EMA_M_STR: ema_m_s_b,
+        EMA_S_STR: ema_s_s_b,
+        EMA_M_SEP: ema_sep_b,
+        BBWP: bbwp_b
+    }
 
+    return current_ind_long, current_ind_short
 
 
 class KrownCross(BotInterface):
-
     def __init__(self, name, tf, pair):
         super().__init__(name, tf, pair)
         self.bbwp_hit_counter = 0
@@ -76,20 +134,22 @@ class KrownCross(BotInterface):
                                                         {
                                                             EMA_F_STR: "false",
                                                             EMA_M_STR: "false",
-                                                            EMA_S_STR: "false"
+                                                            EMA_S_STR: "false",
+                                                            EMA_M_SEP: "false",
+                                                            BBWP: "false"
                                                         },
                                                     LTO.CURRENT_IND_SHORT.value:
                                                         {
                                                             EMA_F_STR: "false",
                                                             EMA_M_STR: "false",
-                                                            EMA_S_STR: "false"
+                                                            EMA_S_STR: "false",
+                                                            EMA_M_SEP: "false",
+                                                            BBWP: "false"
                                                         }
                                                     }
                                   }
 
-
     def entry_exit(self):
-
         # candle is a data frame of a single row containing the most recent candle close to which to apply trade
         # logic on
         candle = self.strategy_indicators()
@@ -112,6 +172,8 @@ class KrownCross(BotInterface):
 
 
         seperation_calc = abs((price - ema_m) / ema_m) * 100
+
+        current_ind_long, current_ind_short = current_ind_eval(ema_f, ema_m, ema_s, seperation_calc, bbwp)
 
         # Check 1: EMA Checks of 9>21>55
         if ema_f > ema_m > ema_s:
@@ -208,7 +270,7 @@ class KrownCross(BotInterface):
             self.trade_update(price)
 
         #Regardless of trade all entry_names (Tf+pair) need to get current indicators updated
-        self.ind_update(current_ind)
+        self.ind_update(current_ind, current_ind_long, current_ind_short)
 
 
     def trade_history_build(self, exit_info):

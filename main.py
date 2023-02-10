@@ -170,9 +170,14 @@ def kline_url_builder(tf, pair):
 def data_pull(tf, pair, data_monitor):
     # logger.info("Being called to print data'")
     url = kline_url_builder(tf, pair)
-    resp = requests.get(url).json()
-    data = binance_to_dataframe(resp)
-    data_monitor.data = data
+    try:
+        resp = requests.get(url).json()
+        data = binance_to_dataframe(resp)
+        data_monitor.data = data
+    except ConnectionError:
+        logging.error(f'Trouble pulling timeframe {tf} and pair {pair}'
+                      f'through had BotInterface: THERE HAS BEEN AN ISSUE CONNECTING OR RECEIVING DATA FOR TRADE'
+                      f'UPDATE\nLIVE PNL FOR THIS BOT WILL REMAIN AS IS')
 
 
 def binance_to_dataframe(dub_arr) -> DataFrame:
