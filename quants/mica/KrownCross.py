@@ -127,8 +127,13 @@ class KrownCross(BotInterface):
                                                          Entry.TIME_IN.value: ""
                                                          },
                                                     LTO.CURRENT_IND_VAL.value:
-                                                        {BBWP: "",
-                                                         Entry.LAST_CLOSING_PRICE.value: ""
+                                                        {
+                                                            EMA_F_STR: "",
+                                                            EMA_M_STR: "",
+                                                            EMA_S_STR: "",
+                                                            EMA_M_SEP: "",
+                                                            BBWP: "",
+                                                            Entry.LAST_CLOSING_PRICE.value: ""
                                                          },
                                                     LTO.CURRENT_IND_LONG.value:
                                                         {
@@ -208,7 +213,11 @@ class KrownCross(BotInterface):
             is_stop_loss = self.short_hold == 1 and ema_f > ema_m or price >= ema_s
 
         current_ind = {
-            "bbwp": bbwp,
+            EMA_F_STR: ema_f,
+            EMA_M_STR: ema_m,
+            EMA_S_STR: ema_s,
+            EMA_M_SEP: seperation_calc,
+            BBWP: bbwp,
             Entry.LAST_CLOSING_PRICE.value: price
         }
 
