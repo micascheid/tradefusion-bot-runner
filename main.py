@@ -83,7 +83,7 @@ def bot_db_config(bots) -> None:
 
     for bot in bots:
         query = firestore.client().collection('entry').document(f'{bot.name}').get().to_dict()
-        tf_pair_key = str(bot.get_tf+bot.get_pair)
+        tf_pair_key = str(bot.get_tf()+bot.get_pair())
         if tf_pair_key not in query:
             firestore.client().collection('entry').document(f'{bot.name}').set(bot.LIVE_TRADE_OBJECT, merge=True)
 
