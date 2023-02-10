@@ -80,14 +80,12 @@ def calc_job_times(timeframe) -> {}:
 
 def bot_db_config(bots) -> None:
     # Each bot needs to go out and create the following document: entry/<bot_name>/<tf+pair>
-    for key in BotsEnum.bots_enum_dict.keys():
-        doc_query = firestore.client().collection('entry').document(key).get()
-        if doc_query.to_dict() is None:
-            firestore.client().collection('entry').document(key).set('')
 
     for bot in bots:
-        # print(f'Botname: {bot.name}, TRADE_OBJ: {bot.LIVE_TRADE_OBJECT}')
-        firestore.client().collection('entry').document(f'{bot.name}').update(bot.LIVE_TRADE_OBJECT)
+        query = firestore.client().collection('entry').document(f'{bot.name}').get().to_dict()
+        tf_pair_key = str(bot.get_tf+bot.get_pair)
+        if tf_pair_key not in query:
+            firestore.client().collection('entry').document(f'{bot.name}').set(bot.LIVE_TRADE_OBJECT, merge=True)
 
 
 def Main():

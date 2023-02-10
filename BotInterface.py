@@ -22,7 +22,6 @@ class BotInterface(metaclass=ABCMeta):
                                                                                              self.tf+self.pair))
         self.entry_name = self.tf+self.pair
 
-
     def get_tf(self):
         return self.tf
 

@@ -9,7 +9,6 @@ import json
 import os
 
 
-
 def db_initializer():
     cred = credentials.Certificate('firebase_firestore_credentials_mltradefusion.json')
     firebase_admin.initialize_app(cred)
