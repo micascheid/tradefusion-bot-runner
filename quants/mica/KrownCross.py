@@ -28,6 +28,14 @@ EMA_F_STR = "ema_f"
 EMA_M_STR = "ema_m"
 EMA_S_STR = "ema_s"
 EMA_M_SEP = "ema_m_sep"
+
+#Stop Losses
+SL_EMAF_LT_EMAM = "sl_emaf_lt_emam"
+SL_P_LT_EMAS = "sl_p_lt_emas"
+
+#Take Profit
+TP_BBWP_HITS = "tp_bbwp_hits"
+
 logger = logging.getLogger('root')
 
 
@@ -114,45 +122,50 @@ class KrownCross(BotInterface):
         super().__init__(name, tf, pair)
         self.bbwp_hit_counter = 0
         self.trade_force_count = 0
-        self.LIVE_TRADE_OBJECT = {self.entry_name: {LTO.LIVE_TRADE.value:
-                                                        {Entry.IN_TRADE.value: "false",
-                                                         Entry.LIVE_PNL.value: "",
-                                                         Entry.TRADE_DURATION.value: "",
-                                                         Entry.POSITION.value: "",
-                                                         BBWP_ENTRY: "",
-                                                         EMA_F_STR: "",
-                                                         EMA_M_STR: "",
-                                                         EMA_S_STR: "",
-                                                         Entry.PRICE_ENTRY.value: "",
-                                                         Entry.TIME_IN.value: ""
-                                                         },
-                                                    LTO.CURRENT_IND_VAL.value:
-                                                        {
-                                                            EMA_F_STR: "",
-                                                            EMA_M_STR: "",
-                                                            EMA_S_STR: "",
-                                                            EMA_M_SEP: "",
-                                                            BBWP: "",
-                                                            Entry.LAST_CLOSING_PRICE.value: ""
-                                                         },
-                                                    LTO.CURRENT_IND_LONG.value:
-                                                        {
-                                                            EMA_F_STR: "false",
-                                                            EMA_M_STR: "false",
-                                                            EMA_S_STR: "false",
-                                                            EMA_M_SEP: "false",
-                                                            BBWP: "false"
-                                                        },
-                                                    LTO.CURRENT_IND_SHORT.value:
-                                                        {
-                                                            EMA_F_STR: "false",
-                                                            EMA_M_STR: "false",
-                                                            EMA_S_STR: "false",
-                                                            EMA_M_SEP: "false",
-                                                            BBWP: "false"
-                                                        }
-                                                    }
-                                  }
+        self.LIVE_TRADE_OBJECT = {self.entry_name:
+            {
+                LTO.LIVE_TRADE.value:
+                    {Entry.IN_TRADE.value: "false",
+                     Entry.LIVE_PNL.value: "",
+                     Entry.TRADE_DURATION.value: "",
+                     Entry.POSITION.value: "",
+                     BBWP_ENTRY: "",
+                     EMA_F_STR: "",
+                     EMA_M_STR: "",
+                     EMA_S_STR: "",
+                     Entry.PRICE_ENTRY.value: "",
+                     Entry.TIME_IN.value: ""
+                     },
+                LTO.CURRENT_IND_VAL.value:
+                    {
+                        EMA_F_STR: "",
+                        EMA_M_STR: "",
+                        EMA_S_STR: "",
+                        EMA_M_SEP: "",
+                        BBWP: "",
+                        Entry.LAST_CLOSING_PRICE.value: "",
+                        SL_EMAF_LT_EMAM: "",
+                        SL_P_LT_EMAS: "",
+                        TP_BBWP_HITS: ""
+                    },
+                LTO.CURRENT_IND_LONG.value:
+                    {
+                        EMA_F_STR: "false",
+                        EMA_M_STR: "false",
+                        EMA_S_STR: "false",
+                        EMA_M_SEP: "false",
+                        BBWP: "false"
+                    },
+                LTO.CURRENT_IND_SHORT.value:
+                    {
+                        EMA_F_STR: "false",
+                        EMA_M_STR: "false",
+                        EMA_S_STR: "false",
+                        EMA_M_SEP: "false",
+                        BBWP: "false"
+                    }
+            }
+        }
 
     def entry_exit(self):
         # candle is a data frame of a single row containing the most recent candle close to which to apply trade
@@ -174,7 +187,6 @@ class KrownCross(BotInterface):
 
         long_entry_signals = 0
         short_entry_signals = 0
-
 
         seperation_calc = abs((price - ema_m) / ema_m) * 100
 
@@ -218,7 +230,10 @@ class KrownCross(BotInterface):
             EMA_S_STR: ema_s,
             EMA_M_SEP: seperation_calc,
             BBWP: bbwp,
-            Entry.LAST_CLOSING_PRICE.value: price
+            Entry.LAST_CLOSING_PRICE.value: price,
+            SL_EMAF_LT_EMAM:  True if ema_f < ema_m else False,
+            SL_P_LT_EMAS: True if price < ema_s else False,
+            TP_BBWP_HITS: self.bbwp_hit_counter
         }
 
         live_entry_info = {

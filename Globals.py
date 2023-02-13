@@ -43,17 +43,22 @@ class Exit(Enum):
     PNL = "pnl"
     PRICE_EXIT = "price_exit"
     TIME_OUT = "time_out"
+    TAKE_PROFIT = "take_profit"
+    STOP_LOSS = "stop_loss"
 
 
 class Current(Enum):
     TRADE_DURATION = "trade_duration"
     LAST_UPDATE_TIME = "last_update_time"
 
+
 class LTO(Enum):
     LIVE_TRADE = "live_trade"
     CURRENT_IND_VAL = "current_ind_val"
     CURRENT_IND_LONG = "current_ind_long"
     CURRENT_IND_SHORT = "current_ind_short"
+    EXIT_STOP_LOSS = "exit_stop_loss"
+    EXIT_TAKE_PROFIT = "exit_take_profit"
 
 
 def trade_duration(entry_time, exit_time):

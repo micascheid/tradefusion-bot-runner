@@ -9,6 +9,11 @@ from Globals import Entry, Exit, TIME_FRAME_TO_SEC, trade_duration, pnl, Current
 
 PPVI_HIGH = "ppvi_high"
 PPVI_LOW = "ppvi_low"
+SL_BOOL = "sl_bool"
+SL_VAL = "sl_val"
+TP_BOOL = "tp_bool"
+TP_VAL =  "tp_val"
+TP_BAND = "tp_band"
 logger = logging.getLogger('root')
 
 
@@ -20,30 +25,36 @@ class CSP(BotInterface):
         self.force_entry = False
         self.force_exit = False
         self.in_trade = 0
-        self.LIVE_TRADE_OBJECT = {self.entry_name: {LTO.LIVE_TRADE.value:
-                                                        {Entry.IN_TRADE.value: "false",
-                                                         Entry.LIVE_PNL.value: "",
-                                                         Entry.TRADE_DURATION.value: "",
-                                                         Entry.POSITION.value: "",
-                                                         PPVI_HIGH: "",
-                                                         PPVI_LOW: "",
-                                                         Entry.PRICE_ENTRY.value: "",
-                                                         Entry.TIME_IN.value: ""
-                                                         },
-                                                    LTO.CURRENT_IND_VAL.value:
-                                                        {PPVI_HIGH: "",
-                                                         PPVI_LOW: "",
-                                                         Entry.LAST_CLOSING_PRICE.value: ""
-                                                         },
-                                                    LTO.CURRENT_IND_LONG.value:
-                                                        {
-                                                            PPVI_LOW: "false",
-                                                        },
-                                                    LTO.CURRENT_IND_SHORT.value:
-                                                        {
-                                                            PPVI_HIGH: "false",
-                                                        }
-                                                    }
+        self.LIVE_TRADE_OBJECT = {self.entry_name:
+                                      {LTO.LIVE_TRADE.value:
+                                           {Entry.IN_TRADE.value: "false",
+                                            Entry.LIVE_PNL.value: "",
+                                            Entry.TRADE_DURATION.value: "",
+                                            Entry.POSITION.value: "",
+                                            PPVI_HIGH: "",
+                                            PPVI_LOW: "",
+                                            Entry.PRICE_ENTRY.value: "",
+                                            Entry.TIME_IN.value: ""
+                                            },
+                                       LTO.CURRENT_IND_VAL.value:
+                                           {PPVI_HIGH: "",
+                                            PPVI_LOW: "",
+                                            Entry.LAST_CLOSING_PRICE.value: "",
+                                            SL_BOOL: "",
+                                            SL_VAL: "",
+                                            TP_BOOL: "",
+                                            TP_VAL: "",
+                                            TP_BAND: ""
+                                            },
+                                       LTO.CURRENT_IND_LONG.value:
+                                           {
+                                               PPVI_LOW: "false",
+                                           },
+                                       LTO.CURRENT_IND_SHORT.value:
+                                           {
+                                               PPVI_HIGH: "false",
+                                           }
+                                       }
                                   }
 
     def entry_exit(self):
@@ -54,7 +65,10 @@ class CSP(BotInterface):
             PPVI_HIGH: "false",
         }
         stop_loss_percent = 1
+        stop_loss_val = 0
         take_profit_percent = 2
+        take_profit_val = 0
+        take_profit_band = False
 
         candle = self.strategy_indicators()
         # The addition of a candle stick interval to the timestamp is that the decision of an entry/exit is based on
@@ -78,24 +92,33 @@ class CSP(BotInterface):
         # Take Profit
         is_take_profit = False
         if self.long_hold == 1:
-            is_take_profit = price > ppvi_high_band or price > self.last_purchase_price * (
+            take_profit_band = price > ppvi_high_band
+            is_take_profit = take_profit_band or price > self.last_purchase_price * (
                     1 + (take_profit_percent / 100))
         if self.short_hold == 1:
-            is_take_profit = price < ppvi_low_band or price < self.last_purchase_price * (1 - (
+            take_profit_band = price < ppvi_low_band
+            is_take_profit = take_profit_band or price < self.last_purchase_price * (1 - (
                     take_profit_percent / 100))
 
         # Stop Loss
         is_stop_loss = False
         if self.long_hold == 1:
-            is_stop_loss = price < self.last_purchase_price * (1 - (stop_loss_percent / 100))
+            stop_loss_val = self.last_purchase_price * (1 - (stop_loss_percent / 100))
+            is_stop_loss = price < stop_loss_val
 
         if self.short_hold == 1:
-            is_stop_loss = price > self.last_purchase_price * (1 + (stop_loss_percent / 100))
+            stop_loss_val = self.last_purchase_price * (1 + (stop_loss_percent / 100))
+            is_stop_loss = price > stop_loss_val
 
         current_ind = {
             PPVI_HIGH: ppvi_high_band,
             PPVI_LOW: ppvi_low_band,
-            Entry.LAST_CLOSING_PRICE.value: price
+            Entry.LAST_CLOSING_PRICE.value: price,
+            SL_BOOL: is_stop_loss,
+            SL_VAL: stop_loss_val,
+            TP_BOOL: is_take_profit,
+            TP_VAL: stop_loss_val,
+            TP_BAND: take_profit_band
         }
 
         live_entry_info = {
