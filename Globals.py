@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from datetime import datetime
 from enum import Enum
 import time
+import math
 import pytz
 from datetime import timedelta
 
@@ -78,3 +79,14 @@ def pnl(position, entry_price, exit_price):
     short_pnl = ((entry_price-exit_price)/entry_price)*100
 
     return round(short_pnl, 3)
+
+
+def precision_handling(some_dict) -> dict:
+    for key, value in some_dict.items():
+        if isinstance(some_dict[key], float):
+            if math.floor(some_dict[key]) == 0:
+                some_dict[key] = round(some_dict[key], 4)
+            else:
+                some_dict[key] = round(some_dict[key], 2)
+    return some_dict
+

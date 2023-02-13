@@ -2,7 +2,7 @@ import logging
 from abc import ABCMeta, abstractmethod
 from pandas import DataFrame
 from firebase_admin import db, firestore
-from Globals import LIVE_PNL, pnl, Entry, Exit, LTO
+from Globals import LIVE_PNL, pnl, Entry, Exit, LTO, precision_handling
 logger = logging.getLogger('root')
 
 class BotInterface(metaclass=ABCMeta):
@@ -37,6 +37,7 @@ class BotInterface(metaclass=ABCMeta):
         :return: Nothing, is a db management function
         """
         logging.info(f'{self.name} IS MAKING ENTRY ON {self.tf} for {self.pair} with the following:\n{entry_info}\n')
+        entry_info = precision_handling(entry_info)
         if self.ref_entry.get().to_dict() is None:
             firestore.client().collection(u'entry').document(self.name).set('')
         self.ref_entry.update({f'{self.entry_name}.live_trade': entry_info})
@@ -49,7 +50,7 @@ class BotInterface(metaclass=ABCMeta):
             trade metrics
         :return: Nothing, is a db management function
         """
-        finished_trade = self.trade_history_build(exit_info)
+        finished_trade = precision_handling(self.trade_history_build(exit_info))
         logging.info(f'{self.name} IS EXITING ON {self.tf} for {self.pair} with the following:\n{exit_info}\n')
 
         self.ref_trade_history.add(finished_trade)
@@ -68,6 +69,7 @@ class BotInterface(metaclass=ABCMeta):
             # GOBACK: stupid to modify the same document in 3 different ways. But at the time of writing this code I
             # couldn't figure out a way to update without overwriting(removing) the "live_trade" portion.
             #handle current ind values, current ind long condition bools, current ind short condition bools
+            current_ind = precision_handling(current_ind)
             self.ref_entry.update({f'{self.entry_name}.{LTO.CURRENT_IND_VAL.value}': current_ind})
             self.ref_entry.update({f'{self.entry_name}.{LTO.CURRENT_IND_LONG.value}': current_ind_long})
             self.ref_entry.update({f'{self.entry_name}.{LTO.CURRENT_IND_SHORT.value}': current_ind_short})
@@ -85,6 +87,7 @@ class BotInterface(metaclass=ABCMeta):
         try:
             entry = self.ref_entry.get().to_dict()[self.entry_name]['live_trade']
             entry[LIVE_PNL] = pnl(entry[Entry.POSITION.value], entry[Entry.PRICE_ENTRY.value], current_price)
+            entry = precision_handling(entry)
             self.ref_entry.update({f'{self.entry_name}.live_trade': entry})
         except ConnectionError:
             logging.error(f'{self.name} with timeframe {self.tf} and pair {self.pair}'
