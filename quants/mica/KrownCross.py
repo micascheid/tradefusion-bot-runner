@@ -16,7 +16,7 @@ EMA_S = 55 # s = slow
 EMA = 'EMA_'
 separation = 2
 bbwp_entry_signal = 60
-bbwp_exit_signal = 70
+bbwp_exit_signal = 90
 bbwp_hit_counter = 0
 
 
