@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from datetime import datetime
 from enum import Enum
 import time
+import math
 import pytz
 from datetime import timedelta
 
@@ -28,18 +29,36 @@ INTERVAL_UNITS = {
 
 
 class Entry(Enum):
+    LAST_CLOSING_PRICE = 'last_closing_price'
+    IN_TRADE = "in_trade"
     CLOSE = "Close"
     LIVE_PNL = "live_pnl"
     POSITION = "position"
     PRICE_ENTRY = "price_entry"
     TIME_IN = "time_in"
+    TRADE_DURATION = "trade_duration"
 
 
 class Exit(Enum):
     PNL = "pnl"
     PRICE_EXIT = "price_exit"
     TIME_OUT = "time_out"
+    TAKE_PROFIT = "take_profit"
+    STOP_LOSS = "stop_loss"
+
+
+class Current(Enum):
     TRADE_DURATION = "trade_duration"
+    LAST_UPDATE_TIME = "last_update_time"
+
+
+class LTO(Enum):
+    LIVE_TRADE = "live_trade"
+    CURRENT_IND_VAL = "current_ind_val"
+    CURRENT_IND_LONG = "current_ind_long"
+    CURRENT_IND_SHORT = "current_ind_short"
+    EXIT_STOP_LOSS = "exit_stop_loss"
+    EXIT_TAKE_PROFIT = "exit_take_profit"
 
 
 def trade_duration(entry_time, exit_time):
@@ -65,3 +84,14 @@ def pnl(position, entry_price, exit_price):
     short_pnl = ((entry_price-exit_price)/entry_price)*100
 
     return round(short_pnl, 3)
+
+
+def precision_handling(some_dict) -> dict:
+    for key, value in some_dict.items():
+        if isinstance(some_dict[key], float):
+            if math.floor(some_dict[key]) == 0:
+                some_dict[key] = round(some_dict[key], 4)
+            else:
+                some_dict[key] = round(some_dict[key], 2)
+    return some_dict
+

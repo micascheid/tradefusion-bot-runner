@@ -8,7 +8,7 @@ import pandas as pd
 from datetime import timedelta
 from Globals import TIME_FRAME_TO_SEC, trade_duration, pnl
 from datetime import datetime
-from Globals import Entry, Exit
+from Globals import Entry, Exit, Current, LTO
 
 EMA_F = 9 #f = fast
 EMA_M = 21 #m = medium
@@ -24,19 +24,150 @@ BBWP_ENTRY = "bbwp_entry"
 BBWP_EXIT = "bbwp_exit"
 CLOSE = "Close"
 BBWP = "BBWP"
+EMA_F_STR = "ema_f"
+EMA_M_STR = "ema_m"
+EMA_S_STR = "ema_s"
+EMA_M_SEP = "ema_m_sep"
+
+#Stop Losses
+SL_EMAF_LT_EMAM = "sl_emaf_lt_emam"
+SL_P_LT_EMAS = "sl_p_lt_emas"
+
+#Take Profit
+TP_BBWP_HITS = "tp_bbwp_hits"
+
 logger = logging.getLogger('root')
 
 
+def current_ind_eval(ema_f, ema_m, ema_s, ema_m_s, bbwp):
+    bbwp_b = "false"
+    ema_sep_b = "false"
+
+    # long bools
+    ema_f_l_b = "false"
+    ema_m_l_b = "false"
+    ema_s_l_b = "false"
+
+    # short bools
+    ema_f_s_b = "false"
+    ema_m_s_b = "false"
+    ema_s_s_b = "false"
+
+    if bbwp <= bbwp_entry_signal:
+        bbwp_b = "true"
+
+    if ema_m_s <= separation:
+        ema_sep_b = "true"
+
+    # case 1:
+    if ema_f > ema_m > ema_s:
+        # long
+        ema_f_l_b = "true"
+        ema_m_l_b = "true"
+        ema_s_l_b = "true"
+        # short
+    # case 2:
+    if ema_m > ema_f > ema_s:
+        # long
+        ema_m_l_b = "true"
+        ema_s_l_b = "true"
+        # short
+    # case 3:
+    if ema_m > ema_s > ema_f:
+        # long
+        ema_m_l_b = "true"
+        # short
+        ema_f_s_b = "true"
+    # case 4:
+    if ema_s > ema_m > ema_f:
+        # long
+        # short
+        ema_f_s_b = "true"
+        ema_m_s_b = "true"
+        ema_s_s_b = "true"
+    # case 5:
+    if ema_f > ema_s > ema_m:
+        # long
+        ema_f_l_b = "true"
+        # short
+        ema_m_s_b = "true"
+
+    # case 6
+    if ema_s > ema_f > ema_m:
+        # long
+        # short
+        ema_m_s_b = "true"
+        ema_s_s_b = "true"
+
+    current_ind_long = {
+        EMA_F_STR: ema_f_l_b,
+        EMA_M_STR: ema_m_l_b,
+        EMA_S_STR: ema_s_l_b,
+        EMA_M_SEP: ema_sep_b,
+        BBWP: bbwp_b
+    }
+    current_ind_short = {
+        EMA_F_STR: ema_f_s_b,
+        EMA_M_STR: ema_m_s_b,
+        EMA_S_STR: ema_s_s_b,
+        EMA_M_SEP: ema_sep_b,
+        BBWP: bbwp_b
+    }
+
+    return current_ind_long, current_ind_short
+
 
 class KrownCross(BotInterface):
-
     def __init__(self, name, tf, pair):
         super().__init__(name, tf, pair)
         self.bbwp_hit_counter = 0
         self.trade_force_count = 0
+        self.LIVE_TRADE_OBJECT = {self.entry_name:
+            {
+                LTO.LIVE_TRADE.value:
+                    {Entry.IN_TRADE.value: "false",
+                     Entry.LIVE_PNL.value: "",
+                     Entry.TRADE_DURATION.value: "",
+                     Entry.POSITION.value: "",
+                     BBWP_ENTRY: "",
+                     EMA_F_STR: "",
+                     EMA_M_STR: "",
+                     EMA_S_STR: "",
+                     Entry.PRICE_ENTRY.value: "",
+                     Entry.TIME_IN.value: ""
+                     },
+                LTO.CURRENT_IND_VAL.value:
+                    {
+                        EMA_F_STR: "",
+                        EMA_M_STR: "",
+                        EMA_S_STR: "",
+                        EMA_M_SEP: "",
+                        BBWP: "",
+                        Entry.LAST_CLOSING_PRICE.value: "",
+                        SL_EMAF_LT_EMAM: "",
+                        SL_P_LT_EMAS: "",
+                        TP_BBWP_HITS: ""
+                    },
+                LTO.CURRENT_IND_LONG.value:
+                    {
+                        EMA_F_STR: "false",
+                        EMA_M_STR: "false",
+                        EMA_S_STR: "false",
+                        EMA_M_SEP: "false",
+                        BBWP: "false"
+                    },
+                LTO.CURRENT_IND_SHORT.value:
+                    {
+                        EMA_F_STR: "false",
+                        EMA_M_STR: "false",
+                        EMA_S_STR: "false",
+                        EMA_M_SEP: "false",
+                        BBWP: "false"
+                    }
+            }
+        }
 
     def entry_exit(self):
-
         # candle is a data frame of a single row containing the most recent candle close to which to apply trade
         # logic on
         candle = self.strategy_indicators()
@@ -57,8 +188,9 @@ class KrownCross(BotInterface):
         long_entry_signals = 0
         short_entry_signals = 0
 
-
         seperation_calc = abs((price - ema_m) / ema_m) * 100
+
+        current_ind_long, current_ind_short = current_ind_eval(ema_f, ema_m, ema_s, seperation_calc, bbwp)
 
         # Check 1: EMA Checks of 9>21>55
         if ema_f > ema_m > ema_s:
@@ -92,11 +224,28 @@ class KrownCross(BotInterface):
         if self.short_hold == 1:
             is_stop_loss = self.short_hold == 1 and ema_f > ema_m or price >= ema_s
 
-        entry_info = {
+        current_ind = {
+            EMA_F_STR: ema_f,
+            EMA_M_STR: ema_m,
+            EMA_S_STR: ema_s,
+            EMA_M_SEP: seperation_calc,
+            BBWP: bbwp,
+            Entry.LAST_CLOSING_PRICE.value: price,
+            SL_EMAF_LT_EMAM:  True if ema_f < ema_m else False,
+            SL_P_LT_EMAS: True if price < ema_s else False,
+            TP_BBWP_HITS: self.bbwp_hit_counter
+        }
+
+        live_entry_info = {
+            Entry.IN_TRADE.value: "",
             Entry.TIME_IN.value: timestamp,
+            Entry.TRADE_DURATION.value: "",
             Entry.POSITION.value: "",
             Entry.PRICE_ENTRY.value: price,
             BBWP_ENTRY: bbwp,
+            EMA_F_STR: ema_f,
+            EMA_M_STR: ema_m,
+            EMA_S_STR: ema_s,
             Entry.LIVE_PNL.value: ""
         }
 
@@ -108,11 +257,12 @@ class KrownCross(BotInterface):
 
         # Long entry
         if self.long_hold == 0 and long_entry_signals == 3:
-            entry_info[Entry.POSITION.value] = "long"
+            live_entry_info[Entry.POSITION.value] = "long"
+            live_entry_info[Entry.IN_TRADE.value] = "true"
             if self.short_hold == 1:
                 self.exit(exit_info)
                 self.short_hold = 0
-            self.entry(entry_info)
+            self.entry(live_entry_info)
             self.last_purchase_price = price
             self.long_hold = 1
 
@@ -124,11 +274,12 @@ class KrownCross(BotInterface):
             self.bbwp_hit_counter = 0
 
         if self.short_hold == 0 and short_entry_signals == 3:
-            entry_info[Entry.POSITION.value] = "short"
+            live_entry_info[Entry.POSITION.value] = "short"
+            live_entry_info[Entry.IN_TRADE.value] = "true"
             if self.long_hold == 1:
                 self.exit(exit_info)
                 self.long_hold = 0
-            self.entry(entry_info)
+            self.entry(live_entry_info)
             self.last_purchase_price = price
             self.short_hold = 1
         # Short exit
@@ -142,10 +293,13 @@ class KrownCross(BotInterface):
         if self.long_hold == 1 or self.short_hold == 1:
             self.trade_update(price)
 
+        #Regardless of trade all entry_names (Tf+pair) need to get current indicators updated
+        self.ind_update(current_ind, current_ind_long, current_ind_short)
+
 
     def trade_history_build(self, exit_info):
         #First get entry info
-        entry_info = self.ref_entry.get().to_dict()[self.entry_name]
+        entry_info = self.ref_entry.get().to_dict()[self.entry_name][LTO.LIVE_TRADE.value]
 
         # Merge the entry and exit info into one dict for" the trade_history node in the db
         try:
@@ -159,7 +313,7 @@ class KrownCross(BotInterface):
                 BBWP_EXIT: exit_info[BBWP_EXIT],
                 Exit.PNL.value: pnl(entry_info[Entry.POSITION.value], float(entry_info[Entry.PRICE_ENTRY.value]),
                                float(exit_info[Exit.PRICE_EXIT.value])),
-                Exit.TRADE_DURATION.value: trade_duration(entry_info[Entry.TIME_IN.value], exit_info[Exit.TIME_OUT.value])
+                Current.TRADE_DURATION.value: trade_duration(entry_info[Entry.TIME_IN.value], exit_info[Exit.TIME_OUT.value])
             }
         except ValueError:
             logging.warning(f'{self.name} on {self.tf} and trading pair {self.pair} is unable to create final trade '
@@ -173,7 +327,7 @@ class KrownCross(BotInterface):
                 BBWP_ENTRY: "",
                 BBWP_EXIT: "",
                 Exit.PNL.value: "",
-                Exit.TRADE_DURATION.value: ""
+                Current.TRADE_DURATION.value: ""
             }
 
         return finished_trade

@@ -5,10 +5,15 @@ from BotInterface import BotInterface
 import pandas as pd
 import pandas_ta as ta
 from datetime import timedelta
-from Globals import Entry, Exit, TIME_FRAME_TO_SEC, trade_duration, pnl
+from Globals import Entry, Exit, TIME_FRAME_TO_SEC, trade_duration, pnl, Current, LTO
 
 PPVI_HIGH = "ppvi_high"
 PPVI_LOW = "ppvi_low"
+SL_BOOL = "sl_bool"
+SL_VAL = "sl_val"
+TP_BOOL = "tp_bool"
+TP_VAL =  "tp_val"
+TP_BAND = "tp_band"
 logger = logging.getLogger('root')
 
 
@@ -20,10 +25,50 @@ class CSP(BotInterface):
         self.force_entry = False
         self.force_exit = False
         self.in_trade = 0
+        self.LIVE_TRADE_OBJECT = {self.entry_name:
+                                      {LTO.LIVE_TRADE.value:
+                                           {Entry.IN_TRADE.value: "false",
+                                            Entry.LIVE_PNL.value: "",
+                                            Entry.TRADE_DURATION.value: "",
+                                            Entry.POSITION.value: "",
+                                            PPVI_HIGH: "",
+                                            PPVI_LOW: "",
+                                            Entry.PRICE_ENTRY.value: "",
+                                            Entry.TIME_IN.value: ""
+                                            },
+                                       LTO.CURRENT_IND_VAL.value:
+                                           {PPVI_HIGH: "",
+                                            PPVI_LOW: "",
+                                            Entry.LAST_CLOSING_PRICE.value: "",
+                                            SL_BOOL: "",
+                                            SL_VAL: "",
+                                            TP_BOOL: "",
+                                            TP_VAL: "",
+                                            TP_BAND: ""
+                                            },
+                                       LTO.CURRENT_IND_LONG.value:
+                                           {
+                                               PPVI_LOW: "false",
+                                           },
+                                       LTO.CURRENT_IND_SHORT.value:
+                                           {
+                                               PPVI_HIGH: "false",
+                                           }
+                                       }
+                                  }
 
     def entry_exit(self):
+        current_ind_long = {
+            PPVI_LOW: "false"
+        }
+        current_ind_short = {
+            PPVI_HIGH: "false",
+        }
         stop_loss_percent = 1
+        stop_loss_val = 0
         take_profit_percent = 2
+        take_profit_val = 0
+        take_profit_band = False
 
         candle = self.strategy_indicators()
         # The addition of a candle stick interval to the timestamp is that the decision of an entry/exit is based on
@@ -47,33 +92,50 @@ class CSP(BotInterface):
         # Take Profit
         is_take_profit = False
         if self.long_hold == 1:
-            is_take_profit = price > ppvi_high_band or price > self.last_purchase_price * (
+            take_profit_band = price > ppvi_high_band
+            is_take_profit = take_profit_band or price > self.last_purchase_price * (
                     1 + (take_profit_percent / 100))
         if self.short_hold == 1:
-            is_take_profit = price < ppvi_low_band or price < self.last_purchase_price * (1 - (
+            take_profit_band = price < ppvi_low_band
+            is_take_profit = take_profit_band or price < self.last_purchase_price * (1 - (
                     take_profit_percent / 100))
 
         # Stop Loss
         is_stop_loss = False
         if self.long_hold == 1:
-            is_stop_loss = price < self.last_purchase_price * (1 - (stop_loss_percent / 100))
+            stop_loss_val = self.last_purchase_price * (1 - (stop_loss_percent / 100))
+            is_stop_loss = price < stop_loss_val
 
         if self.short_hold == 1:
-            is_stop_loss = price > self.last_purchase_price * (1 + (stop_loss_percent / 100))
+            stop_loss_val = self.last_purchase_price * (1 + (stop_loss_percent / 100))
+            is_stop_loss = price > stop_loss_val
 
-        entry_info = {
-            "time_in": timestamp,
-            "position": "",
-            "price_entry": price,
-            "ppvi_high": ppvi_high_band,
-            "ppvi_low": ppvi_low_band
+        current_ind = {
+            PPVI_HIGH: ppvi_high_band,
+            PPVI_LOW: ppvi_low_band,
+            Entry.LAST_CLOSING_PRICE.value: price,
+            SL_BOOL: is_stop_loss,
+            SL_VAL: stop_loss_val,
+            TP_BOOL: is_take_profit,
+            TP_VAL: stop_loss_val,
+            TP_BAND: take_profit_band
+        }
+
+        live_entry_info = {
+            Entry.IN_TRADE.value: "",
+            Entry.TIME_IN.value: timestamp,
+            Entry.TRADE_DURATION.value: "",
+            Entry.POSITION.value: "",
+            Entry.PRICE_ENTRY.value: price,
+            PPVI_HIGH: ppvi_high_band,
+            PPVI_LOW: ppvi_low_band
         }
 
         exit_info = {
-            "time_out": timestamp,
-            "price_exit": price,
-            "ppvi_high": ppvi_high_band,
-            "ppvi_low": ppvi_low_band
+            Exit.TIME_OUT.value: timestamp,
+            Exit.PRICE_EXIT.value: price,
+            PPVI_HIGH: ppvi_high_band,
+            PPVI_LOW: ppvi_low_band
         }
 
         if self.force_exit and self.in_trade == 1:
@@ -81,18 +143,21 @@ class CSP(BotInterface):
             self.in_trade = 0
             return
         if self.force_entry:
-            entry_info['position'] = "long"
-            self.entry(entry_info)
+            live_entry_info[Entry.POSITION.value] = "long"
+            live_entry_info[Entry.IN_TRADE.value] = "true"
+            self.entry(live_entry_info)
             self.in_trade = 1
             return
 
         # Long Entry and Short Check Exit
         if self.long_hold == 0 and long_entry_signals >= 1:
-            entry_info[Entry.POSITION.value] = "long"
+            live_entry_info[Entry.POSITION.value] = "long"
+            live_entry_info[Entry.IN_TRADE.value] = "true"
+            current_ind_long[PPVI_LOW] = "true"
             if self.short_hold == 1:
                 self.exit(exit_info)
                 self.short_hold = 0
-            self.entry(entry_info)
+            self.entry(live_entry_info)
             self.last_purchase_price = price
             self.long_hold = 1
         # Long Exit as stop loss or take profit
@@ -103,11 +168,13 @@ class CSP(BotInterface):
 
         # Short Entry and Long Exit Check
         if self.short_hold == 0 and short_entry_signals >= 1:
-            entry_info[Entry.POSITION.value] = "short"
+            live_entry_info[Entry.POSITION.value] = "short"
+            live_entry_info[Entry.IN_TRADE.value] = "true"
+            current_ind_short[PPVI_HIGH] = "true"
             if self.long_hold == 1:
                 self.exit(exit_info)
                 self.long_hold = 0
-            self.entry(entry_info)
+            self.entry(live_entry_info)
             self.last_purchase_price = price
             self.short_hold = 1
         # Short Exit as stop loss or take profit
@@ -116,13 +183,16 @@ class CSP(BotInterface):
             self.short_hold = 0
             self.last_purchase_price = 0
 
-        #Call trade_update (only has live_pnl for now) if no exit is made and in trade
+        # Call trade_update (only has live_pnl for now) if no exit is made and in trade
         if self.long_hold == 1 or self.short_hold == 1:
             self.trade_update(price)
 
+        # Regardless of trade all entry_names (Tf+pair) need to get current indicators updated
+        self.ind_update(current_ind, current_ind_long, current_ind_short)
+
     def trade_history_build(self, exit_info):
         # First get entry info
-        entry_info = self.ref_entry.get().to_dict()[self.entry_name]
+        entry_info = self.ref_entry.get().to_dict()[self.entry_name][LTO.LIVE_TRADE.value]
 
         # Merge the entry and exit info into one dict for the trade_history node in the db
         try:
@@ -136,7 +206,7 @@ class CSP(BotInterface):
                 PPVI_HIGH: exit_info[PPVI_LOW],
                 Exit.PNL.value: pnl(entry_info[Entry.POSITION.value], float(entry_info[Entry.PRICE_ENTRY.value]),
                                     float(exit_info[Exit.PRICE_EXIT.value])),
-                Exit.TRADE_DURATION.value: trade_duration(entry_info[Entry.TIME_IN.value], exit_info[
+                Current.TRADE_DURATION.value: trade_duration(entry_info[Entry.TIME_IN.value], exit_info[
                     Exit.TIME_OUT.value])
             }
         except ValueError:
@@ -151,7 +221,7 @@ class CSP(BotInterface):
                 PPVI_LOW: "",
                 PPVI_HIGH: "",
                 Exit.PNL.value: "",
-                Exit.TRADE_DURATION.value: ""
+                Current.TRADE_DURATION.value: ""
             }
 
         return finished_trade

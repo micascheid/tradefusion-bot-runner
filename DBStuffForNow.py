@@ -1,22 +1,28 @@
 import sys
 
 from firebase_admin import credentials, db, firestore
+
+import BotsEnum
 from Globals import DB_URL
 import firebase_admin
 import json
 import os
 
 
-
 def db_initializer():
-    cred = credentials.Certificate('firebase_firestore_credentials_micascheid.json')
+    cred = credentials.Certificate('firebase_firestore_credentials_mltradefusion.json')
     firebase_admin.initialize_app(cred)
 
 
 def db_init_data_check() -> None:
     #Final db structure is not conclusive and will be worked on further after discussion with usage of mvp by quants.
     # For now, I will hard code it in as seen below
-    if len(firestore.client().collection(u'active_bots').get()) > 0 :
+    for key in BotsEnum.bots_enum_dict.keys():
+        doc_query = firestore.client().collection('entry').document(key).get()
+        if doc_query.to_dict() is None:
+            firestore.client().collection('entry').document(key).set('')
+
+    if len(firestore.client().collection(u'quant_names').get()) > 0:
         return
     quant1 = {
         "bots": {
