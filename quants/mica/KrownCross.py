@@ -262,6 +262,7 @@ class KrownCross(BotInterface):
             if self.short_hold == 1:
                 self.exit(exit_info)
                 self.short_hold = 0
+                self.bbwp_hit_counter = 0
             self.entry(live_entry_info)
             self.last_purchase_price = price
             self.long_hold = 1
@@ -279,6 +280,7 @@ class KrownCross(BotInterface):
             if self.long_hold == 1:
                 self.exit(exit_info)
                 self.long_hold = 0
+                self.bbwp_hit_counter = 0
             self.entry(live_entry_info)
             self.last_purchase_price = price
             self.short_hold = 1
