@@ -117,7 +117,7 @@ class CSP(BotInterface):
             SL_BOOL: is_stop_loss,
             SL_VAL: stop_loss_val,
             TP_BOOL: is_take_profit,
-            TP_VAL: stop_loss_val,
+            TP_VAL: take_profit_val,
             TP_BAND: take_profit_band
         }
 
