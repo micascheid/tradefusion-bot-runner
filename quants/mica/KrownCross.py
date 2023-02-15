@@ -16,7 +16,7 @@ EMA_S = 55 # s = slow
 EMA = 'EMA_'
 separation = 2
 bbwp_entry_signal = 60
-bbwp_exit_signal = 70
+bbwp_exit_signal = 90
 bbwp_hit_counter = 0
 
 
@@ -262,6 +262,7 @@ class KrownCross(BotInterface):
             if self.short_hold == 1:
                 self.exit(exit_info)
                 self.short_hold = 0
+                self.bbwp_hit_counter = 0
             self.entry(live_entry_info)
             self.last_purchase_price = price
             self.long_hold = 1
@@ -279,6 +280,7 @@ class KrownCross(BotInterface):
             if self.long_hold == 1:
                 self.exit(exit_info)
                 self.long_hold = 0
+                self.bbwp_hit_counter = 0
             self.entry(live_entry_info)
             self.last_purchase_price = price
             self.short_hold = 1
