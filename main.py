@@ -89,7 +89,7 @@ def bot_db_config(bots) -> None:
 
 
 def Main():
-    # Startup the ole logger
+    # Startup the ole logger 
     logging.basicConfig(filename="./logs/log.txt", level=logging.INFO,
                         format='%(asctime)s - %(levelname)s - %(module)s - %(message)s')
     tz = pytz.timezone('UTC')
